@@ -142,6 +142,20 @@ function validateCreateBillBody(body) {
     });
   }
 
+  let calculatedTotal = 0;
+  for (const item of normalizedItems) {
+    calculatedTotal += item.price * item.quantity;
+  }
+  
+  if (Math.abs(calculatedTotal - total) > 0.01) {
+    return {
+      status: 400,
+      body: {
+        error: `Item totals do not match bill total. Items sum to ${calculatedTotal.toFixed(2)}, but bill total is ${total.toFixed(2)}.`
+      }
+    };
+  }
+
   const people = body?.people;
   if (!Array.isArray(people) || people.length === 0) {
     return { status: 400, body: { error: "people must be a non-empty array" } };
@@ -236,6 +250,15 @@ async function handleImageUpload(req, res) {
   const validation = validateRequest(req);
   if (validation.status) {
     res.status(validation.status).json(validation.body);
+    return null;
+  }
+
+  const { fileTypeFromBuffer } = await import("file-type");
+  const fileType = await fileTypeFromBuffer(req.file.buffer);
+
+  if (!fileType || !fileType.mime.startsWith("image/")) {
+    const { status, body } = uploadErrorResponse(new InvalidMimetypeError());
+    res.status(status).json(body);
     return null;
   }
 

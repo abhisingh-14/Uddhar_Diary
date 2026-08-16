@@ -1,11 +1,8 @@
--- Run this in the Supabase SQL Editor.
--- Matches backend/sql/uddhar_diary_schema.sql (bills, bill_items, debts).
---
--- items JSON shape:         [{ "name": string, "price": number, "quantity": number }]
--- split_entries JSON shape: [{ "personId": uuid-string, "owedAmount": number, "direction": "they_owe_you" | "you_owe_them" }]
---
--- debts.amount is always stored as a positive numeric(10,2); direction carries the sign semantics.
--- split_entries with zero owedAmount are skipped (debts.amount has a > 0 check constraint).
+-- Run this in the Supabase SQL Editor to fix "permission denied for table bills".
+-- Adds SECURITY DEFINER so the function runs with the owner's privileges
+-- instead of the calling role's (service_role) privileges. Access to the
+-- function itself is still locked down by the existing REVOKE/GRANT below,
+-- so this doesn't widen who can call it — only what it's allowed to do once called.
 
 CREATE OR REPLACE FUNCTION public.create_bill_with_split(
   p_user_id uuid,
@@ -19,6 +16,8 @@ CREATE OR REPLACE FUNCTION public.create_bill_with_split(
 )
 RETURNS uuid
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_bill_id uuid;
