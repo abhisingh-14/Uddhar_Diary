@@ -3,11 +3,13 @@ const multer = require("multer");
 
 const { supabase } = require("../lib/supabaseClient");
 const { extractBillFromImage } = require("../services/billExtraction");
+const { calculateEvenSplit } = require("../services/splitCalculator");
 
 const BILL_IMAGES_BUCKET = "bill-images";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_USER_ID_LENGTH = 128;
-const USER_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 class InvalidMimetypeError extends Error {}
 
@@ -49,16 +51,9 @@ function uploadErrorResponse(err) {
 }
 
 function validateRequest(req) {
-  const userId = (req.body || {}).userId;
-  if (typeof userId !== "string" || userId.trim() === "") {
-    return { status: 400, body: { error: "userId is required" } };
-  }
-  const trimmedUserId = userId.trim();
-  if (
-    trimmedUserId.length > MAX_USER_ID_LENGTH ||
-    !USER_ID_PATTERN.test(trimmedUserId)
-  ) {
-    return { status: 400, body: { error: "userId is invalid" } };
+  const userValidation = validateUserIdField((req.body || {}).userId);
+  if (userValidation.status) {
+    return userValidation;
   }
   if (!req.file) {
     return { status: 400, body: { error: "image file is required" } };
@@ -66,7 +61,148 @@ function validateRequest(req) {
   if (req.file.size > MAX_FILE_SIZE_BYTES) {
     return { status: 413, body: { error: "Image must be 10MB or smaller" } };
   }
+  return { userId: userValidation.userId };
+}
+
+function validateUserIdField(userId) {
+  if (typeof userId !== "string" || userId.trim() === "") {
+    return { status: 400, body: { error: "userId is required" } };
+  }
+  const trimmedUserId = userId.trim();
+  if (!UUID_PATTERN.test(trimmedUserId)) {
+    return { status: 400, body: { error: "userId must be a valid UUID" } };
+  }
   return { userId: trimmedUserId };
+}
+
+function validateCreateBillBody(body) {
+  const userValidation = validateUserIdField(body?.userId);
+  if (userValidation.status) {
+    return userValidation;
+  }
+  const { userId } = userValidation;
+
+  const storagePath = body?.storagePath;
+  if (typeof storagePath !== "string" || storagePath.trim() === "") {
+    return { status: 400, body: { error: "storagePath is required" } };
+  }
+
+  const merchantName = body?.merchantName;
+  if (typeof merchantName !== "string" || merchantName.trim() === "") {
+    return { status: 400, body: { error: "merchantName is required" } };
+  }
+
+  const total = body?.total;
+  if (typeof total !== "number" || !Number.isFinite(total) || total <= 0) {
+    return { status: 400, body: { error: "total must be a positive number" } };
+  }
+
+  const categoryId = body?.categoryId;
+  if (typeof categoryId !== "string" || !UUID_PATTERN.test(categoryId)) {
+    return { status: 400, body: { error: "categoryId is invalid" } };
+  }
+
+  const billDate = body?.billDate;
+  if (billDate !== null && billDate !== undefined) {
+    if (typeof billDate !== "string" || !ISO_DATE_PATTERN.test(billDate)) {
+      return {
+        status: 400,
+        body: { error: "billDate must be YYYY-MM-DD or null" },
+      };
+    }
+  }
+
+  const items = body?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return { status: 400, body: { error: "items must be a non-empty array" } };
+  }
+
+  const normalizedItems = [];
+  for (const item of items) {
+    if (typeof item?.name !== "string" || item.name.trim() === "") {
+      return { status: 400, body: { error: "each item must have a name" } };
+    }
+    if (typeof item?.price !== "number" || !Number.isFinite(item.price)) {
+      return {
+        status: 400,
+        body: { error: "each item must have a numeric price" },
+      };
+    }
+    const quantity = item?.quantity ?? 1;
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return {
+        status: 400,
+        body: { error: "each item quantity must be a positive integer" },
+      };
+    }
+    normalizedItems.push({
+      name: item.name.trim(),
+      price: item.price,
+      quantity,
+    });
+  }
+
+  const people = body?.people;
+  if (!Array.isArray(people) || people.length === 0) {
+    return { status: 400, body: { error: "people must be a non-empty array" } };
+  }
+
+  const personIds = [];
+  const amountsPaid = {};
+  for (const person of people) {
+    if (typeof person?.personId !== "string" || !UUID_PATTERN.test(person.personId)) {
+      return { status: 400, body: { error: "each person must have a valid personId" } };
+    }
+    if (person.personId === userId) {
+      return {
+        status: 400,
+        body: {
+          error:
+            "people must not include userId; the bill owner is tracked separately",
+        },
+      };
+    }
+    if (
+      typeof person?.amountPaid !== "number" ||
+      !Number.isFinite(person.amountPaid) ||
+      person.amountPaid < 0
+    ) {
+      return {
+        status: 400,
+        body: { error: "each person must have a non-negative amountPaid" },
+      };
+    }
+    if (Object.hasOwn(amountsPaid, person.personId)) {
+      return {
+        status: 400,
+        body: { error: "people must not contain duplicate personId values" },
+      };
+    }
+    personIds.push(person.personId);
+    amountsPaid[person.personId] = person.amountPaid;
+  }
+
+  return {
+    userId,
+    storagePath: storagePath.trim(),
+    merchantName: merchantName.trim(),
+    total,
+    categoryId,
+    billDate: billDate ?? null,
+    items: normalizedItems,
+    personIds,
+    amountsPaid,
+  };
+}
+
+function mapDebtRow(row) {
+  const amount = Number(row.amount);
+  return {
+    id: row.id,
+    personId: row.person_id,
+    owedAmount: row.direction === "they_owe_you" ? amount : -amount,
+    direction: row.direction,
+  };
 }
 
 async function storeBillImage(userId, file) {
@@ -120,6 +256,57 @@ router.post("/upload-image", async (req, res, next) => {
     const uploaded = await handleImageUpload(req, res);
     if (!uploaded) return;
     return res.status(201).json({ storagePath: uploaded.storagePath });
+  } catch (handlerError) {
+    return next(handlerError);
+  }
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    const validation = validateCreateBillBody(req.body);
+    if (validation.status) {
+      return res.status(validation.status).json(validation.body);
+    }
+
+    const splitEntries = calculateEvenSplit(
+      validation.total,
+      validation.personIds,
+      validation.amountsPaid
+    );
+
+    const { data: billId, error: rpcError } = await supabase.rpc(
+      "create_bill_with_split",
+      {
+        p_user_id: validation.userId,
+        p_image_url: validation.storagePath,
+        p_merchant_name: validation.merchantName,
+        p_total_amount: validation.total,
+        p_category_id: validation.categoryId,
+        p_bill_date: validation.billDate,
+        p_items: validation.items,
+        p_split_entries: splitEntries,
+      }
+    );
+
+    if (rpcError) {
+      console.error("create_bill_with_split failed:", rpcError);
+      return res.status(502).json({ error: "Failed to save bill" });
+    }
+
+    const { data: debtRows, error: debtsError } = await supabase
+      .from("debts")
+      .select("id, person_id, amount, direction")
+      .eq("bill_id", billId);
+
+    if (debtsError) {
+      console.error("Failed to load created debts:", debtsError);
+      return res.status(502).json({ error: "Bill saved but debts could not be loaded" });
+    }
+
+    return res.status(201).json({
+      id: billId,
+      debts: (debtRows ?? []).map(mapDebtRow),
+    });
   } catch (handlerError) {
     return next(handlerError);
   }
