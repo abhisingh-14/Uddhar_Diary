@@ -4,11 +4,10 @@ const multer = require("multer");
 const { supabase } = require("../lib/supabaseClient");
 const { extractBillFromImage } = require("../services/billExtraction");
 const { calculateEvenSplit } = require("../services/splitCalculator");
+const { UUID_PATTERN, validateUserIdField } = require("../lib/validators");
 
 const BILL_IMAGES_BUCKET = "bill-images";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 class InvalidMimetypeError extends Error {}
@@ -64,16 +63,7 @@ function validateRequest(req) {
   return { userId: userValidation.userId };
 }
 
-function validateUserIdField(userId) {
-  if (typeof userId !== "string" || userId.trim() === "") {
-    return { status: 400, body: { error: "userId is required" } };
-  }
-  const trimmedUserId = userId.trim();
-  if (!UUID_PATTERN.test(trimmedUserId)) {
-    return { status: 400, body: { error: "userId must be a valid UUID" } };
-  }
-  return { userId: trimmedUserId };
-}
+
 
 function validateCreateBillBody(body) {
   const userValidation = validateUserIdField(body?.userId);
