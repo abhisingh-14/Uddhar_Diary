@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { apiClient } from './api/client.js'
 import ReviewScreen from './components/ReviewScreen.jsx'
+import SplitScreen from './components/SplitScreen.jsx'
+import SuccessScreen from './components/SuccessScreen.jsx'
 import {
   ArrowUpRight,
   BarChart3,
@@ -12,6 +14,8 @@ import {
   Sparkles,
   WalletCards,
 } from 'lucide-react'
+
+const USER_ID = '999af4e5-6e7b-4512-9202-95c1a29dfff0'
 
 const navItems = [
   { label: 'Split Bill', icon: Calculator, active: true },
@@ -29,6 +33,8 @@ export default function App() {
 
   const [step, setStep] = useState('upload')
   const [extractedData, setExtractedData] = useState(null)
+  const [reviewedBill, setReviewedBill] = useState(null)
+  const [saveResult, setSaveResult] = useState(null)
 
   function selectFile(nextFile) {
     if (nextFile && nextFile.type.startsWith('image/')) {
@@ -46,7 +52,7 @@ export default function App() {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      formData.append('userId', '999af4e5-6e7b-4512-9202-95c1a29dfff0')
+      formData.append('userId', USER_ID)
 
       const response = await apiClient('/api/bills/extract', { body: formData })
       console.log('Extraction success:', response)
@@ -116,7 +122,7 @@ export default function App() {
           </header>
 
           <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
-            {step === 'upload' ? (
+            {step === 'upload' && (
               <div className="w-full max-w-[760px]">
                 <div className="max-w-[500px]">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Start with a photo</p>
@@ -184,13 +190,41 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <ReviewScreen 
+            )}
+
+            {step === 'review' && (
+              <ReviewScreen
                 data={extractedData?.extracted}
                 onContinue={(finalData) => {
-                  console.log('Fully reviewed bill data:', finalData);
+                  setReviewedBill({ ...finalData, storagePath: extractedData?.storagePath })
+                  setStep('split')
                 }}
                 onBack={() => setStep('upload')}
+              />
+            )}
+
+            {step === 'split' && (
+              <SplitScreen
+                userId={USER_ID}
+                bill={reviewedBill}
+                onSaved={(result) => {
+                  setSaveResult(result)
+                  setStep('success')
+                }}
+                onBack={() => setStep('review')}
+              />
+            )}
+
+            {step === 'success' && (
+              <SuccessScreen
+                result={saveResult}
+                onStartOver={() => {
+                  setFile(null)
+                  setExtractedData(null)
+                  setReviewedBill(null)
+                  setSaveResult(null)
+                  setStep('upload')
+                }}
               />
             )}
           </div>
