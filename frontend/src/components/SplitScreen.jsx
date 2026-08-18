@@ -104,7 +104,16 @@ export default function SplitScreen({ userId, bill, onSaved, onBack }) {
           })),
         },
       })
-      onSaved(response)
+      
+      const enrichedDebts = response.debts?.map(debt => {
+        const person = people.find(p => p.id === debt.personId)
+        return {
+          ...debt,
+          personName: debt.personName || person?.name || 'Unknown person'
+        }
+      })
+      
+      onSaved({ ...response, debts: enrichedDebts || [] })
     } catch (err) {
       setSaveError(err.message || 'Failed to save bill')
     } finally {

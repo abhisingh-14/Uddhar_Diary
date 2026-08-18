@@ -204,6 +204,7 @@ function mapDebtRow(row) {
   return {
     id: row.id,
     personId: row.person_id,
+    personName: row.people?.name ?? "Unknown person",
     owedAmount: row.direction === "they_owe_you" ? amount : -amount,
     direction: row.direction,
   };
@@ -308,7 +309,7 @@ router.post("/", async (req, res, next) => {
 
     const { data: debtRows, error: debtsError } = await supabase
       .from("debts")
-      .select("id, person_id, amount, direction")
+      .select("id, person_id, amount, direction, people(name)")
       .eq("bill_id", billId);
 
     if (debtsError) {

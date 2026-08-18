@@ -208,7 +208,11 @@ export default function App() {
                 userId={USER_ID}
                 bill={reviewedBill}
                 onSaved={(result) => {
-                  setSaveResult(result)
+                  setSaveResult({
+                    ...result,
+                    merchantName: reviewedBill?.merchantName,
+                    total: reviewedBill?.total,
+                  })
                   setStep('success')
                 }}
                 onBack={() => setStep('review')}
