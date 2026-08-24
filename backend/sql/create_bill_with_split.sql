@@ -64,13 +64,12 @@ BEGIN
       CONTINUE;
     END IF;
 
-    INSERT INTO public.debts (user_id, bill_id, person_id, direction, amount)
+    INSERT INTO public.debts (bill_id, person_id, direction, amount_paise)
     VALUES (
-      p_user_id,
       v_bill_id,
       (v_entry ->> 'personId')::uuid,
       v_entry ->> 'direction',
-      v_owed_amount
+      (v_owed_amount * 100)::integer
     );
   END LOOP;
 

@@ -200,7 +200,7 @@ function validateCreateBillBody(body) {
 }
 
 function mapDebtRow(row) {
-  const amount = Number(row.amount);
+  const amount = Number(row.amount_paise) / 100;
   return {
     id: row.id,
     personId: row.person_id,
@@ -309,7 +309,7 @@ router.post("/", async (req, res, next) => {
 
     const { data: debtRows, error: debtsError } = await supabase
       .from("debts")
-      .select("id, person_id, amount, direction, people(name)")
+      .select("id, person_id, amount_paise, direction, people(name)")
       .eq("bill_id", billId);
 
     if (debtsError) {
