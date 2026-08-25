@@ -64,6 +64,13 @@ BEGIN
       CONTINUE;
     END IF;
 
+    IF NOT EXISTS (
+      SELECT 1 FROM public.people
+      WHERE id = (v_entry ->> 'personId')::uuid AND user_id = p_user_id
+    ) THEN
+      RAISE EXCEPTION 'person % does not belong to user %', v_entry ->> 'personId', p_user_id;
+    END IF;
+
     INSERT INTO public.debts (bill_id, person_id, direction, amount_paise)
     VALUES (
       v_bill_id,
