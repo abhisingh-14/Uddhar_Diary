@@ -1,3 +1,3 @@
 export default function PersonDetailPage() {
-  return <div>Person Detail — coming soon</div>;
+  return <div>Person detail — coming soon</div>;
 }

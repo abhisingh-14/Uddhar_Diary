@@ -29,3 +29,7 @@ export async function apiClient(endpoint, { body, ...customConfig } = {}) {
 
   return response.json();
 }
+
+export async function getBalances(userId) {
+  return apiClient(`/api/debts/balances?userId=${encodeURIComponent(userId)}`);
+}
