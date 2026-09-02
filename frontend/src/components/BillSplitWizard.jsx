@@ -9,8 +9,7 @@ import {
   FileImage,
   ImagePlus,
 } from 'lucide-react'
-
-const USER_ID = '999af4e5-6e7b-4512-9202-95c1a29dfff0'
+import { CURRENT_USER_ID } from '../lib/currentUser.js'
 
 export default function BillSplitWizard() {
   const inputRef = useRef(null)
@@ -138,7 +137,7 @@ export default function BillSplitWizard() {
 
       {step === 'split' && (
         <SplitScreen
-          userId={USER_ID}
+          userId={CURRENT_USER_ID}
           bill={reviewedBill}
           onSaved={(result) => {
             setSaveResult({
