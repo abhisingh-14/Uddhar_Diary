@@ -33,3 +33,9 @@ export async function apiClient(endpoint, { body, ...customConfig } = {}) {
 export async function getBalances(userId) {
   return apiClient(`/api/debts/balances?userId=${encodeURIComponent(userId)}`);
 }
+
+export async function getPersonDebts(personId, userId) {
+  return apiClient(
+    `/api/debts/person/${encodeURIComponent(personId)}?userId=${encodeURIComponent(userId)}`,
+  );
+}
