@@ -6,6 +6,7 @@ const billsRouter = require('./src/routes/bills');
 const peopleRouter = require('./src/routes/people');
 const categoriesRouter = require('./src/routes/categories');
 const debtsRouter = require('./src/routes/debts');
+const expensesRouter = require('./src/routes/expenses');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,6 +22,7 @@ app.use('/api/bills', billsRouter);
 app.use('/api/people', peopleRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/debts', debtsRouter);
+app.use('/api/expenses', expensesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
