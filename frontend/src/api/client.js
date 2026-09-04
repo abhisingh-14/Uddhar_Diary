@@ -39,3 +39,10 @@ export async function getPersonDebts(personId, userId) {
     `/api/debts/person/${encodeURIComponent(personId)}?userId=${encodeURIComponent(userId)}`,
   );
 }
+
+export async function settleDebt(debtId, userId, amountPaise) {
+  return apiClient(`/api/debts/${encodeURIComponent(debtId)}/settle`, {
+    method: 'PATCH',
+    body: { userId, amountPaise },
+  });
+}

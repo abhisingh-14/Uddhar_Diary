@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Loader2, UserX } from 'lucide-react'
-import { apiClient, getPersonDebts } from '../api/client.js'
+import { apiClient, getPersonDebts, settleDebt } from '../api/client.js'
 import DebtHistoryItem from '../components/diary/DebtHistoryItem.jsx'
 import { CURRENT_USER_ID } from '../lib/currentUser.js'
 import { formatPaise } from '../lib/money.js'
@@ -71,6 +71,20 @@ export default function PersonDetailPage() {
 
   const netBalancePaise = useMemo(() => computeNetBalancePaise(debts), [debts])
   const summary = netBalanceLabel(netBalancePaise)
+
+  const handleSettleDebt = async (debtId, amountPaise) => {
+    try {
+      const updatedDebt = await settleDebt(debtId, CURRENT_USER_ID, amountPaise)
+      
+      setDebts((prevDebts) =>
+        prevDebts.map((debt) =>
+          debt.id === debtId ? updatedDebt : debt
+        )
+      )
+    } catch (err) {
+      throw err
+    }
+  }
 
   return (
     <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
@@ -155,7 +169,7 @@ export default function PersonDetailPage() {
               ) : (
                 <div className="space-y-2">
                   {debts.map((debt) => (
-                    <DebtHistoryItem key={debt.id} debt={debt} />
+                    <DebtHistoryItem key={debt.id} debt={debt} onSettle={handleSettleDebt} />
                   ))}
                 </div>
               )}
