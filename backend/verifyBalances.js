@@ -19,8 +19,7 @@ async function verify() {
     // Attempt to update both amount and amount_paise, also amount_paid_paise and status just in case.
     const res = await supabase
       .from('debts')
-      .update({ amount_paise: 0, amount: 0, amount_paid_paise: 0 })
-      .eq('user_id', CURRENT_USER_ID)
+      .update({ amount_paise: 0, amount_paid_paise: 0 })
       .eq('person_id', personToZero.person_id);
       
     console.log('Update result:', res);

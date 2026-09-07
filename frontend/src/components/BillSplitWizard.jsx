@@ -39,7 +39,7 @@ export default function BillSplitWizard() {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      formData.append('userId', USER_ID)
+      formData.append('userId', CURRENT_USER_ID)
 
       const response = await apiClient('/api/bills/extract', { body: formData })
       console.log('Extraction success:', response)
