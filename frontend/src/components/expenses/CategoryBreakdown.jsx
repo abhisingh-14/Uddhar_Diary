@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { getExpensesByCategory } from '../../api/client';
 import { formatPaise } from '../../lib/money';
+import { CURRENT_USER_ID } from '../../lib/currentUser';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57'];
 
@@ -17,7 +18,7 @@ export default function CategoryBreakdown({ granularity }) {
       try {
         setLoading(true);
         setError(null);
-        const result = await getExpensesByCategory(granularity);
+        const result = await getExpensesByCategory(granularity, CURRENT_USER_ID);
         if (isMounted) {
           setData(result);
         }

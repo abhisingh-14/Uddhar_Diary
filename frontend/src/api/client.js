@@ -47,10 +47,10 @@ export async function settleDebt(debtId, userId, amountPaise) {
   });
 }
 
-export async function getExpensesByCategory(granularity) {
-  return apiClient(`/api/expenses/by-category?granularity=${encodeURIComponent(granularity)}`);
+export async function getExpensesByCategory(granularity, userId) {
+  return apiClient(`/api/expenses/by-category?granularity=${encodeURIComponent(granularity)}&userId=${encodeURIComponent(userId)}`);
 }
 
-export async function getExpensesOverTime(granularity) {
-  return apiClient(`/api/expenses/over-time?granularity=${encodeURIComponent(granularity)}`);
+export async function getExpensesOverTime(granularity, userId) {
+  return apiClient(`/api/expenses/over-time?granularity=${encodeURIComponent(granularity)}&userId=${encodeURIComponent(userId)}`);
 }
