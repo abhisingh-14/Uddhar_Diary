@@ -61,8 +61,6 @@ function validateRequest(req) {
   return {};
 }
 
-
-
 function validateCreateBillBody(body, reqUserId) {
   const userId = reqUserId;
 
@@ -203,6 +201,81 @@ function mapDebtRow(row) {
     direction: row.direction,
   };
 }
+
+async function storeBillImage(userId, file) {
+  const storagePath = `${userId}/${Date.now()}-${sanitizeFilename(
+    file.originalname
+  )}`;
+
+  const { error } = await supabase.storage
+    .from(BILL_IMAGES_BUCKET)
+    .upload(storagePath, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+  return { storagePath, error };
+}
+
+// Runs multer, validates input, and uploads to Storage. Returns null when a
+// response has already been sent, otherwise the accepted upload's details.
+async function handleImageUpload(req, res) {
+  const uploadError = await new Promise((resolve) => {
+    upload.single("image")(req, res, resolve);
+  });
+
+  if (uploadError) {
+    const { status, body } = uploadErrorResponse(uploadError);
+    res.status(status).json(body);
+    return null;
+  }
+
+  const validation = validateRequest(req);
+  if (validation.status) {
+    res.status(validation.status).json(validation.body);
+    return null;
+  }
+
+  const { fileTypeFromBuffer } = await import("file-type");
+  const fileType = await fileTypeFromBuffer(req.file.buffer);
+
+  if (!fileType || !fileType.mime.startsWith("image/")) {
+    const { status, body } = uploadErrorResponse(new InvalidMimetypeError());
+    res.status(status).json(body);
+    return null;
+  }
+
+  const { storagePath, error } = await storeBillImage(
+    req.userId,
+    req.file
+  );
+  if (error) {
+    res.status(502).json({ error: "Failed to upload image" });
+    return null;
+  }
+
+  return { storagePath, file: req.file };
+}
+
+router.post("/upload-image", async (req, res, next) => {
+  try {
+    const uploaded = await handleImageUpload(req, res);
+    if (!uploaded) return;
+    return res.status(201).json({ storagePath: uploaded.storagePath });
+  } catch (handlerError) {
+    return next(handlerError);
+  }
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    const validation = validateCreateBillBody(req.body, req.userId);
+    if (validation.status) {
+      return res.status(validation.status).json(validation.body);
+    }
+
+    const splitEntries = calculateEvenSplit(
+      validation.total,
       validation.personIds,
       validation.amountsPaid
     );
