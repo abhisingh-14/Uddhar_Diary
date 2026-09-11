@@ -4,7 +4,8 @@ const multer = require("multer");
 const { supabase } = require("../lib/supabaseClient");
 const { extractBillFromImage } = require("../services/billExtraction");
 const { calculateEvenSplit } = require("../services/splitCalculator");
-const { UUID_PATTERN, validateUserIdField } = require("../lib/validators");
+const { UUID_PATTERN } = require("../lib/validators");
+const { requireAuth } = require("../middleware/requireAuth");
 
 const BILL_IMAGES_BUCKET = "bill-images";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -25,6 +26,7 @@ const upload = multer({
 });
 
 const router = express.Router();
+router.use(requireAuth);
 
 function sanitizeFilename(name) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -50,27 +52,19 @@ function uploadErrorResponse(err) {
 }
 
 function validateRequest(req) {
-  const userValidation = validateUserIdField((req.body || {}).userId);
-  if (userValidation.status) {
-    return userValidation;
-  }
   if (!req.file) {
     return { status: 400, body: { error: "image file is required" } };
   }
   if (req.file.size > MAX_FILE_SIZE_BYTES) {
     return { status: 413, body: { error: "Image must be 10MB or smaller" } };
   }
-  return { userId: userValidation.userId };
+  return {};
 }
 
 
 
-function validateCreateBillBody(body) {
-  const userValidation = validateUserIdField(body?.userId);
-  if (userValidation.status) {
-    return userValidation;
-  }
-  const { userId } = userValidation;
+function validateCreateBillBody(body, reqUserId) {
+  const userId = reqUserId;
 
   const storagePath = body?.storagePath;
   if (typeof storagePath !== "string" || storagePath.trim() === "") {
@@ -209,81 +203,6 @@ function mapDebtRow(row) {
     direction: row.direction,
   };
 }
-
-async function storeBillImage(userId, file) {
-  const storagePath = `${userId}/${Date.now()}-${sanitizeFilename(
-    file.originalname
-  )}`;
-
-  const { error } = await supabase.storage
-    .from(BILL_IMAGES_BUCKET)
-    .upload(storagePath, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false,
-    });
-
-  return { storagePath, error };
-}
-
-// Runs multer, validates input, and uploads to Storage. Returns null when a
-// response has already been sent, otherwise the accepted upload's details.
-async function handleImageUpload(req, res) {
-  const uploadError = await new Promise((resolve) => {
-    upload.single("image")(req, res, resolve);
-  });
-
-  if (uploadError) {
-    const { status, body } = uploadErrorResponse(uploadError);
-    res.status(status).json(body);
-    return null;
-  }
-
-  const validation = validateRequest(req);
-  if (validation.status) {
-    res.status(validation.status).json(validation.body);
-    return null;
-  }
-
-  const { fileTypeFromBuffer } = await import("file-type");
-  const fileType = await fileTypeFromBuffer(req.file.buffer);
-
-  if (!fileType || !fileType.mime.startsWith("image/")) {
-    const { status, body } = uploadErrorResponse(new InvalidMimetypeError());
-    res.status(status).json(body);
-    return null;
-  }
-
-  const { storagePath, error } = await storeBillImage(
-    validation.userId,
-    req.file
-  );
-  if (error) {
-    res.status(502).json({ error: "Failed to upload image" });
-    return null;
-  }
-
-  return { storagePath, file: req.file };
-}
-
-router.post("/upload-image", async (req, res, next) => {
-  try {
-    const uploaded = await handleImageUpload(req, res);
-    if (!uploaded) return;
-    return res.status(201).json({ storagePath: uploaded.storagePath });
-  } catch (handlerError) {
-    return next(handlerError);
-  }
-});
-
-router.post("/", async (req, res, next) => {
-  try {
-    const validation = validateCreateBillBody(req.body);
-    if (validation.status) {
-      return res.status(validation.status).json(validation.body);
-    }
-
-    const splitEntries = calculateEvenSplit(
-      validation.total,
       validation.personIds,
       validation.amountsPaid
     );

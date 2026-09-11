@@ -1,9 +1,11 @@
 const express = require("express");
 
 const { supabase } = require("../lib/supabaseClient");
-const { UUID_PATTERN, validateUserIdField } = require("../lib/validators");
+const { UUID_PATTERN } = require("../lib/validators");
+const { requireAuth } = require("../middleware/requireAuth");
 
 const router = express.Router();
+router.use(requireAuth);
 
 function mapDebtRow(row) {
   const amountPaise = row.amount_paise;
@@ -26,17 +28,14 @@ function mapDebtRow(row) {
 
 router.get("/balances", async (req, res, next) => {
   try {
-    const userValidation = validateUserIdField(req.query.userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
+    const userId = req.userId;
 
     const { data, error } = await supabase
       .from("person_balances")
       .select(
         "person_id, name, they_owe_you_paise, you_owe_them_paise, net_balance_paise"
       )
-      .eq("user_id", userValidation.userId);
+      .eq("user_id", userId);
 
     if (error) {
       console.error("Failed to fetch balances:", error);
@@ -66,17 +65,14 @@ router.get("/person/:personId", async (req, res, next) => {
       return res.status(400).json({ error: "personId is invalid" });
     }
 
-    const userValidation = validateUserIdField(req.query.userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
+    const userId = req.userId;
 
     // Prevent cross-user debt-history access through a guessed person ID.
     const { data: person, error: personError } = await supabase
       .from("people")
       .select("id")
       .eq("id", personId)
-      .eq("user_id", userValidation.userId)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (personError) {
@@ -113,10 +109,7 @@ router.patch("/:debtId/settle", async (req, res, next) => {
       return res.status(400).json({ error: "debtId is invalid" });
     }
 
-    const userValidation = validateUserIdField((req.body || {}).userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
+    const userId = req.userId;
 
     const { amountPaise } = req.body || {};
     if (
@@ -141,7 +134,7 @@ router.patch("/:debtId/settle", async (req, res, next) => {
       console.error("Failed to fetch debt:", debtError);
       return res.status(502).json({ error: "Failed to settle debt" });
     }
-    if (!debt || debt.people?.user_id !== userValidation.userId) {
+    if (!debt || debt.people?.user_id !== userId) {
       return res.status(404).json({ error: "Debt not found" });
     }
 

@@ -1,16 +1,14 @@
 const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
-const { validateUserIdField } = require("../lib/validators");
+const { requireAuth } = require("../middleware/requireAuth");
 
 const router = express.Router();
+router.use(requireAuth);
 
 router.get("/", async (req, res, next) => {
   try {
-    const userValidation = validateUserIdField(req.query.userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
-    const trimmedUserId = userValidation.userId;
+    const trimmedUserId = req.userId;
+
 
     const { data, error } = await supabase
       .from("people")
@@ -32,11 +30,7 @@ router.post("/", async (req, res, next) => {
   try {
     const { name, email } = req.body || {};
     
-    const userValidation = validateUserIdField((req.body || {}).userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
-    const trimmedUserId = userValidation.userId;
+    const trimmedUserId = req.userId;
 
     if (typeof name !== "string" || name.trim() === "") {
       return res.status(400).json({ error: "name is required" });

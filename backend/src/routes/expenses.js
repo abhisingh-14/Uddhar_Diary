@@ -1,8 +1,9 @@
 const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
-const { validateUserIdField } = require("../lib/validators");
+const { requireAuth } = require("../middleware/requireAuth");
 
 const router = express.Router();
+router.use(requireAuth);
 
 const formatDate = (d) => {
   const year = d.getFullYear();
@@ -13,11 +14,8 @@ const formatDate = (d) => {
 
 router.get("/by-category", async (req, res, next) => {
   try {
-    const userValidation = validateUserIdField(req.query.userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
-    const userId = userValidation.userId;
+    const userId = req.userId;
+
 
     const { granularity, date } = req.query;
 
@@ -96,11 +94,8 @@ router.get("/by-category", async (req, res, next) => {
 
 router.get("/over-time", async (req, res, next) => {
   try {
-    const userValidation = validateUserIdField(req.query.userId);
-    if (userValidation.status) {
-      return res.status(userValidation.status).json(userValidation.body);
-    }
-    const userId = userValidation.userId;
+    const userId = req.userId;
+
 
     const { granularity, from, to } = req.query;
 
