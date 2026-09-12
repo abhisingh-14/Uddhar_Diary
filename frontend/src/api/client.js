@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabaseClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export async function apiClient(endpoint, { body, ...customConfig } = {}) {
@@ -16,12 +18,17 @@ export async function apiClient(endpoint, { body, ...customConfig } = {}) {
     },
   };
 
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    config.headers.Authorization = `Bearer ${data.session.access_token}`;
+  }
+
   if (body) {
     config.body = body instanceof FormData ? body : JSON.stringify(body);
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, config);
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || `API error: ${response.status} ${response.statusText}`);
@@ -30,27 +37,25 @@ export async function apiClient(endpoint, { body, ...customConfig } = {}) {
   return response.json();
 }
 
-export async function getBalances(userId) {
-  return apiClient(`/api/debts/balances?userId=${encodeURIComponent(userId)}`);
+export async function getBalances() {
+  return apiClient('/api/debts/balances');
 }
 
-export async function getPersonDebts(personId, userId) {
-  return apiClient(
-    `/api/debts/person/${encodeURIComponent(personId)}?userId=${encodeURIComponent(userId)}`,
-  );
+export async function getPersonDebts(personId) {
+  return apiClient(`/api/debts/person/${encodeURIComponent(personId)}`);
 }
 
-export async function settleDebt(debtId, userId, amountPaise) {
+export async function settleDebt(debtId, amountPaise) {
   return apiClient(`/api/debts/${encodeURIComponent(debtId)}/settle`, {
     method: 'PATCH',
-    body: { userId, amountPaise },
+    body: { amountPaise },
   });
 }
 
-export async function getExpensesByCategory(granularity, userId) {
-  return apiClient(`/api/expenses/by-category?granularity=${encodeURIComponent(granularity)}&userId=${encodeURIComponent(userId)}`);
+export async function getExpensesByCategory(granularity) {
+  return apiClient(`/api/expenses/by-category?granularity=${encodeURIComponent(granularity)}`);
 }
 
-export async function getExpensesOverTime(granularity, userId) {
-  return apiClient(`/api/expenses/over-time?granularity=${encodeURIComponent(granularity)}&userId=${encodeURIComponent(userId)}`);
+export async function getExpensesOverTime(granularity) {
+  return apiClient(`/api/expenses/over-time?granularity=${encodeURIComponent(granularity)}`);
 }

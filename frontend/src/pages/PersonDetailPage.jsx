@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Loader2, UserX } from 'lucide-react'
 import { apiClient, getPersonDebts, settleDebt } from '../api/client.js'
 import DebtHistoryItem from '../components/diary/DebtHistoryItem.jsx'
-import { CURRENT_USER_ID } from '../lib/currentUser.js'
 import { formatPaise } from '../lib/money.js'
 
 const UUID_PATTERN =
@@ -46,8 +45,8 @@ export default function PersonDetailPage() {
 
     try {
       const [debtsData, people] = await Promise.all([
-        getPersonDebts(personId, CURRENT_USER_ID),
-        apiClient(`/api/people?userId=${encodeURIComponent(CURRENT_USER_ID)}`),
+        getPersonDebts(personId),
+        apiClient('/api/people'),
       ])
 
       const person = people.find((entry) => entry.id === personId)
@@ -74,7 +73,7 @@ export default function PersonDetailPage() {
 
   const handleSettleDebt = async (debtId, amountPaise) => {
     try {
-      const updatedDebt = await settleDebt(debtId, CURRENT_USER_ID, amountPaise)
+      const updatedDebt = await settleDebt(debtId, amountPaise)
       
       setDebts((prevDebts) =>
         prevDebts.map((debt) =>

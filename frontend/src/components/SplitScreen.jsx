@@ -3,7 +3,7 @@ import { AlertCircle, ArrowLeft, Check, Plus, UserPlus, Users } from 'lucide-rea
 import { apiClient } from '../api/client.js'
 import { calculateEvenSplit } from '../lib/splitPreview.js'
 
-export default function SplitScreen({ userId, bill, onSaved, onBack }) {
+export default function SplitScreen({ bill, onSaved, onBack }) {
   const [people, setPeople] = useState([])
   const [peopleError, setPeopleError] = useState('')
   const [isLoadingPeople, setIsLoadingPeople] = useState(true)
@@ -25,7 +25,7 @@ export default function SplitScreen({ userId, bill, onSaved, onBack }) {
 
     async function fetchPeople() {
       try {
-        const data = await apiClient(`/api/people?userId=${encodeURIComponent(userId)}`)
+        const data = await apiClient('/api/people')
         if (!cancelled) setPeople(data)
       } catch (err) {
         if (!cancelled) setPeopleError(err.message || 'Failed to load people')
@@ -38,7 +38,7 @@ export default function SplitScreen({ userId, bill, onSaved, onBack }) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [])
 
   const total = Number(bill?.total || 0)
   const preview = calculateEvenSplit(total, selectedIds, amountsPaid)
@@ -68,7 +68,7 @@ export default function SplitScreen({ userId, bill, onSaved, onBack }) {
     setAddError('')
 
     try {
-      const body = { userId, name: newName.trim() }
+      const body = { name: newName.trim() }
       if (newEmail.trim()) body.email = newEmail.trim()
 
       const person = await apiClient('/api/people', { body })
@@ -91,7 +91,6 @@ export default function SplitScreen({ userId, bill, onSaved, onBack }) {
     try {
       const response = await apiClient('/api/bills', {
         body: {
-          userId,
           storagePath: bill.storagePath,
           merchantName: bill.merchantName,
           total,

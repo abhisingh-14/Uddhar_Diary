@@ -9,7 +9,6 @@ import {
   FileImage,
   ImagePlus,
 } from 'lucide-react'
-import { CURRENT_USER_ID } from '../lib/currentUser.js'
 
 export default function BillSplitWizard() {
   const inputRef = useRef(null)
@@ -39,7 +38,6 @@ export default function BillSplitWizard() {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      formData.append('userId', CURRENT_USER_ID)
 
       const response = await apiClient('/api/bills/extract', { body: formData })
       console.log('Extraction success:', response)
@@ -137,7 +135,6 @@ export default function BillSplitWizard() {
 
       {step === 'split' && (
         <SplitScreen
-          userId={CURRENT_USER_ID}
           bill={reviewedBill}
           onSaved={(result) => {
             setSaveResult({

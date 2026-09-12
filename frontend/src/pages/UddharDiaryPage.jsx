@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { getBalances } from '../api/client.js'
 import DiaryTabs from '../components/diary/DiaryTabs.jsx'
-import { CURRENT_USER_ID } from '../lib/currentUser.js'
 
 export default function UddharDiaryPage() {
   const [status, setStatus] = useState('loading')
@@ -14,7 +13,7 @@ export default function UddharDiaryPage() {
     setErrorMessage('')
 
     try {
-      const data = await getBalances(CURRENT_USER_ID)
+      const data = await getBalances()
       setBalances(data.balances ?? [])
       setStatus('ready')
     } catch (err) {

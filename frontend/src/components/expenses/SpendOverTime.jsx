@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { getExpensesOverTime } from '../../api/client';
 import { formatPaise } from '../../lib/money';
-import { CURRENT_USER_ID } from '../../lib/currentUser';
 
 export default function SpendOverTime({ granularity }) {
   const [data, setData] = useState([]);
@@ -16,7 +15,7 @@ export default function SpendOverTime({ granularity }) {
       try {
         setLoading(true);
         setError(null);
-        const result = await getExpensesOverTime(granularity, CURRENT_USER_ID);
+        const result = await getExpensesOverTime(granularity);
         if (isMounted) {
           setData(result);
         }
