@@ -1,25 +1,68 @@
-import { Navigate, Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 import SplitBillPage from './pages/SplitBillPage.jsx'
 import UddharDiaryPage from './pages/UddharDiaryPage.jsx'
 import PersonDetailPage from './pages/PersonDetailPage.jsx'
 import ExpenseTrackerPage from './pages/ExpenseTrackerPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import SignupPage from './pages/SignupPage.jsx'
 
 export default function App() {
+  const { pathname } = useLocation()
+  const isAuthPage = pathname === '/login' || pathname === '/signup'
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen flex-col md:flex-row">
-        <Navbar />
+        {!isAuthPage && <Navbar />}
 
         <section className="flex min-w-0 flex-1 flex-col">
           <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/" element={<Navigate to="/split" replace />} />
-            <Route path="/split" element={<SplitBillPage />} />
-            <Route path="/diary" element={<UddharDiaryPage />} />
-            <Route path="/diary/:personId" element={<PersonDetailPage />} />
-            <Route path="/expenses" element={<ExpenseTrackerPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/split"
+              element={
+                <ProtectedRoute>
+                  <SplitBillPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/diary"
+              element={
+                <ProtectedRoute>
+                  <UddharDiaryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/diary/:personId"
+              element={
+                <ProtectedRoute>
+                  <PersonDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <ExpenseTrackerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </section>
       </div>
