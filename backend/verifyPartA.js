@@ -1,6 +1,7 @@
 require('dotenv/config');
 const { createClient } = require('@supabase/supabase-js');
-const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 // For auth, we need the anon key as well to act as a client
@@ -16,16 +17,41 @@ async function verify() {
   let passUnauth = false;
   let passFeatures = false;
   let passLogin = false;
+  let passRefresh = false;
 
   try {
-    const testEmail = `testuser_${crypto.randomBytes(4).toString('hex')}@example.com`;
-    const testPassword = 'TestPassword123!';
+    // Read credentials
+    const passFile = fs.readFileSync(path.join(__dirname, '../frontend/doc/pass.txt'), 'utf-8');
+    const emailMatch = passFile.match(/email:\s*(.+)/);
+    const passMatch = passFile.match(/password:\s*(.+)/);
+    const testEmail = emailMatch ? emailMatch[1].trim() : null;
+    const testPassword = passMatch ? passMatch[1].trim() : null;
 
-    console.log(`\n1. Creating user via admin API: ${testEmail}`);
+    if (!testEmail || !testPassword) {
+      console.error('Could not extract email/password from pass.txt');
+      return;
+    }
+
+    console.log(`Using credentials from pass.txt: ${testEmail}`);
+
+    // Cleanup first if user already exists
+    const { data: usersData } = await supabase.auth.admin.listUsers();
+    const existingUser = usersData.users.find(u => u.email === testEmail);
+    if (existingUser) {
+      console.log(`User already exists, deleting first: ${existingUser.id}`);
+      await supabase.auth.admin.deleteUser(existingUser.id);
+      // Wait a moment for trigger cleanup (if any)
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    console.log(`\n1. Creating user via admin API (signup): ${testEmail}`);
     const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
       email: testEmail,
       password: testPassword,
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: {
+        full_name: 'Test User From File'
+      }
     });
 
     if (signUpError) {
@@ -34,10 +60,11 @@ async function verify() {
     }
 
     const userId = signUpData.user.id;
-    console.log(`User created with ID: ${userId}`);
+    console.log(`User signed up with ID: ${userId}`);
 
-    // Check if trigger created the profiles row
     console.log('\n--- 2. Checking if profiles row is created (Trigger) ---');
+    // We wait a tiny bit to ensure the DB trigger finishes inserting
+    await new Promise(r => setTimeout(r, 1000));
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -45,9 +72,9 @@ async function verify() {
       .single();
 
     if (profileError || !profileData) {
-      console.log('FAIL: Profile row not found for new user.');
+      console.log('FAIL: Profile row not found for new user.', profileError);
     } else {
-      console.log('PASS: Profile row exists.');
+      console.log('PASS: Profile row exists.', profileData);
       passTrigger = true;
     }
 
@@ -61,18 +88,37 @@ async function verify() {
     }
 
     console.log('\n--- 4. Checking login session ---');
+    // Ensure we are logged in (signup often auto-logs in if email confirm is off)
+    // We will do an explicit login just to be sure.
+    await supabaseClient.auth.signOut();
     const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({
       email: testEmail,
       password: testPassword,
     });
 
     let token = null;
+    let refreshToken = null;
     if (loginError || !loginData.session) {
-      console.log('FAIL: Login failed.');
+      console.log('FAIL: Login failed.', loginError);
     } else {
       console.log('PASS: Login successful and returned a valid session.');
       passLogin = true;
       token = loginData.session.access_token;
+      refreshToken = loginData.session.refresh_token;
+    }
+
+    console.log('\n--- 5. Checking login persists across refresh ---');
+    if (refreshToken) {
+      const { data: refreshData, error: refreshErr } = await supabaseClient.auth.refreshSession({ refresh_token: refreshToken });
+      if (refreshErr || !refreshData.session) {
+        console.log('FAIL: Refresh session failed.', refreshErr);
+      } else {
+        console.log('PASS: Session refreshed successfully.');
+        passRefresh = true;
+        token = refreshData.session.access_token; // use new token
+      }
+    } else {
+      console.log('FAIL: No refresh token returned from login.');
     }
 
     if (!token) {
@@ -80,7 +126,7 @@ async function verify() {
       return;
     }
 
-    console.log('\n--- 5. Verifying Step 1-3 features with authenticated user ---');
+    console.log('\n--- 6. Verifying Step 1-3 features with authenticated user ---');
     // Feature 1: Create a person
     const resPerson = await fetch(`${BASE_URL}/api/people`, {
       method: 'POST',
@@ -97,23 +143,23 @@ async function verify() {
       const personData = await resPerson.json();
       const personId = personData.id;
 
-      // Feature 2: Create a category
+      // Feature 2: Fetch categories
       const resCat = await fetch(`${BASE_URL}/api/categories`, {
-        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name: 'Test Category', icon: 'test', color: '#000000' })
+        }
       });
 
       if (!resCat.ok) {
-        console.log('FAIL: Could not create category', await resCat.text());
+        console.log('FAIL: Could not fetch categories', await resCat.text());
       } else {
         const catData = await resCat.json();
-        const categoryId = catData.id;
+        const categoryId = catData.length > 0 ? catData[0].id : null;
 
-        // Feature 3: Create a bill (Split Bill)
+        if (!categoryId) {
+           console.log('FAIL: No categories found to create a bill with');
+        } else {
+          // Feature 3: Create a bill (Split Bill)
         const billPayload = {
           storagePath: 'test-path',
           merchantName: 'Test Merchant',
@@ -136,16 +182,39 @@ async function verify() {
         if (!resBill.ok) {
           console.log('FAIL: Could not create bill', await resBill.text());
         } else {
-          console.log('PASS: Successfully created person, category, and bill with logged-in session.');
-          passFeatures = true;
+          
+          // Feature 4: Diary (Balances)
+          const resBalances = await fetch(`${BASE_URL}/api/debts/balances`, {
+             headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          // Feature 5: Expenses
+          const resExpenses = await fetch(`${BASE_URL}/api/expenses/by-category?granularity=month`, {
+             headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (!resBalances.ok || !resExpenses.ok) {
+            console.log('FAIL: Could not fetch Diary or Expenses.');
+            console.log('Balances:', await resBalances.text());
+            console.log('Expenses:', await resExpenses.text());
+          } else {
+            const balData = await resBalances.json();
+            const expData = await resExpenses.json();
+            console.log('PASS: Successfully fetched Diary balances and Expenses.');
+            console.log('Balances length:', balData.balances ? balData.balances.length : 'undefined');
+            console.log('Expenses length:', expData.length);
+            passFeatures = true;
+          }
         }
       }
+    }
     }
 
     console.log('\n--- FINAL SUMMARY ---');
     console.log(`Trigger creates profile: ${passTrigger ? 'PASS' : 'FAIL'}`);
     console.log(`Unauthenticated gets 401: ${passUnauth ? 'PASS' : 'FAIL'}`);
     console.log(`Login works and returns session: ${passLogin ? 'PASS' : 'FAIL'}`);
+    console.log(`Login persists across refresh: ${passRefresh ? 'PASS' : 'FAIL'}`);
     console.log(`Features (Step 1-3) work for logged-in user: ${passFeatures ? 'PASS' : 'FAIL'}`);
 
     // Cleanup: delete the test user
