@@ -1,6 +1,7 @@
 const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
 const { requireAuth } = require("../middleware/requireAuth");
+const { UUID_PATTERN } = require("../lib/validators");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -61,6 +62,72 @@ router.post("/", async (req, res, next) => {
     }
 
     return res.status(201).json(data);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch("/:personId", async (req, res, next) => {
+  try {
+    const { personId } = req.params;
+    if (typeof personId !== "string" || !UUID_PATTERN.test(personId)) {
+      return res.status(400).json({ error: "personId is invalid" });
+    }
+
+    const { email } = req.body || {};
+    const trimmedUserId = req.userId;
+
+    // Validate email input
+    if (email === undefined) {
+      return res.status(400).json({ error: "email is required" });
+    }
+    if (email !== null && typeof email !== "string") {
+      return res.status(400).json({ error: "email must be a string or null" });
+    }
+
+    let trimmedEmail = null;
+    if (email !== null) {
+      if (email.trim() === "") {
+        return res.status(400).json({ error: "email cannot be an empty string" });
+      }
+      // Simple email validation regex
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({ error: "email must be a valid email address" });
+      }
+      trimmedEmail = email.trim();
+    }
+
+    // Verify person belongs to this user (prevents cross-user access via guessed personId)
+    const { data: person, error: personError } = await supabase
+      .from("people")
+      .select("id")
+      .eq("id", personId)
+      .eq("user_id", trimmedUserId)
+      .maybeSingle();
+
+    if (personError) {
+      console.error("Failed to verify person ownership:", personError);
+      return res.status(500).json({ error: "Failed to update person" });
+    }
+    if (!person) {
+      return res.status(404).json({ error: "Person not found" });
+    }
+
+    // Update the email
+    const { data: updatedPerson, error: updateError } = await supabase
+      .from("people")
+      .update({ email: trimmedEmail })
+      .eq("id", personId)
+      .select("id, name, email")
+      .single();
+
+    if (updateError) {
+      console.error("Failed to update person:", updateError);
+      return res.status(500).json({ error: "Failed to update person" });
+    }
+
+    return res.json(updatedPerson);
   } catch (err) {
     return next(err);
   }
