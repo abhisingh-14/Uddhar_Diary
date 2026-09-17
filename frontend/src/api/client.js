@@ -70,3 +70,9 @@ export async function updatePersonEmail(personId, email) {
     body: { email },
   });
 }
+
+export async function sendReminder(personId) {
+  return apiClient(`/api/people/${encodeURIComponent(personId)}/remind`, {
+    method: 'POST',
+  });
+}
