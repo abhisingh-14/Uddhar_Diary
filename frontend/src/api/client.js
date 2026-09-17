@@ -59,3 +59,14 @@ export async function getExpensesByCategory(granularity) {
 export async function getExpensesOverTime(granularity) {
   return apiClient(`/api/expenses/over-time?granularity=${encodeURIComponent(granularity)}`);
 }
+
+export async function getPeople() {
+  return apiClient('/api/people');
+}
+
+export async function updatePersonEmail(personId, email) {
+  return apiClient(`/api/people/${encodeURIComponent(personId)}`, {
+    method: 'PATCH',
+    body: { email },
+  });
+}
