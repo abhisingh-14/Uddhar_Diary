@@ -2,6 +2,7 @@ const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
 const { requireAuth } = require("../middleware/requireAuth");
 const { UUID_PATTERN } = require("../lib/validators");
+const { sendReminderEmail } = require("../services/emailService");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -128,6 +129,75 @@ router.patch("/:personId", async (req, res, next) => {
     }
 
     return res.json(updatedPerson);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post("/:personId/remind", async (req, res, next) => {
+  try {
+    const { personId } = req.params;
+    if (typeof personId !== "string" || !UUID_PATTERN.test(personId)) {
+      return res.status(400).json({ error: "personId is invalid" });
+    }
+
+    const trimmedUserId = req.userId;
+
+    // Verify person belongs to this user (same pattern as B3)
+    const { data: person, error: personError } = await supabase
+      .from("people")
+      .select("id, name, email")
+      .eq("id", personId)
+      .eq("user_id", trimmedUserId)
+      .maybeSingle();
+
+    if (personError) {
+      console.error("Failed to verify person ownership:", personError);
+      return res.status(500).json({ error: "Failed to send reminder" });
+    }
+    if (!person) {
+      return res.status(404).json({ error: "Person not found" });
+    }
+
+    // Validate person has a non-null, non-empty email
+    if (!person.email || person.email.trim() === "") {
+      return res.status(400).json({ error: "no email on file for this person" });
+    }
+
+    // Check balance before sending email - we validate the debt exists and is positive
+    // This order is important: if we sent the email first and then checked the balance,
+    // we might send a reminder for a zero/negative balance or when no debt exists,
+    // wasting resources and potentially confusing the recipient. Checking first ensures
+    // we only send reminders when there's a genuine positive balance owed.
+    const { data: balanceRow, error: balanceError } = await supabase
+      .from("person_balances")
+      .select("they_owe_you_paise")
+      .eq("person_id", personId)
+      .maybeSingle();
+
+    if (balanceError) {
+      console.error("Failed to check person balance:", balanceError);
+      return res.status(500).json({ error: "Failed to send reminder" });
+    }
+    if (!balanceRow || balanceRow.they_owe_you_paise === null || balanceRow.they_owe_you_paise <= 0) {
+      return res.status(400).json({ error: "no positive balance owed by this person" });
+    }
+
+    const theyOweYouPaise = balanceRow.they_owe_you_paise;
+
+    // Send the reminder email
+    const result = await sendReminderEmail({
+      toEmail: person.email,
+      personName: person.name,
+      amountPaise: theyOweYouPaise,
+    });
+
+    if (result.success) {
+      return res.status(200).json({ message: "Reminder sent successfully" });
+    } else {
+      // 502 signals "upstream email provider failed" rather than "our logic broke"
+      return res.status(502).json({ error: result.error });
+    }
   } catch (err) {
     return next(err);
   }
