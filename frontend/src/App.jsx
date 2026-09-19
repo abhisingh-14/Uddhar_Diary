@@ -6,6 +6,9 @@ import UddharDiaryPage from './pages/UddharDiaryPage.jsx'
 import PersonDetailPage from './pages/PersonDetailPage.jsx'
 import ExpenseTrackerPage from './pages/ExpenseTrackerPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import ProfileSection from './components/settings/ProfileSection.jsx'
+import SecuritySection from './components/settings/SecuritySection.jsx'
+import PeopleContacts from './components/settings/PeopleContacts.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 
@@ -62,7 +65,12 @@ export default function App() {
                   <SettingsPage />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="/settings/profile" replace />} />
+              <Route path="profile" element={<ProfileSection />} />
+              <Route path="security" element={<SecuritySection />} />
+              <Route path="people" element={<PeopleContacts />} />
+            </Route>
           </Routes>
         </section>
       </div>
