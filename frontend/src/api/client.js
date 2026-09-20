@@ -76,3 +76,14 @@ export async function sendReminder(personId) {
     method: 'POST',
   });
 }
+
+export async function getProfile() {
+  return apiClient('/api/profile');
+}
+
+export async function updateProfile({ fullName }) {
+  return apiClient('/api/profile', {
+    method: 'PATCH',
+    body: { fullName },
+  });
+}
