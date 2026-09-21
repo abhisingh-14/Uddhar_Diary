@@ -31,7 +31,12 @@ export async function apiClient(endpoint, { body, ...customConfig } = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `API error: ${response.status} ${response.statusText}`);
+    const apiError = new Error(error.error || `API error: ${response.status} ${response.statusText}`);
+    // Expose the server's machine-readable code and HTTP status so callers can
+    // map failures onto specific fields instead of parsing the message.
+    apiError.code = error.code;
+    apiError.status = response.status;
+    throw apiError;
   }
 
   return response.json();
@@ -85,5 +90,12 @@ export async function updateProfile({ fullName }) {
   return apiClient('/api/profile', {
     method: 'PATCH',
     body: { fullName },
+  });
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  return apiClient('/api/account/change-password', {
+    method: 'POST',
+    body: { currentPassword, newPassword },
   });
 }
