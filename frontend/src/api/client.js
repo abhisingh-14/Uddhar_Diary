@@ -76,11 +76,17 @@ export async function createPerson({ name, email }) {
   });
 }
 
-export async function updatePersonEmail(personId, email) {
+// Partial update: send only the fields being changed, so a name edit leaves the
+// email alone and vice versa. Inherits the code/status fields apiClient attaches.
+export async function updatePerson(personId, fields) {
   return apiClient(`/api/people/${encodeURIComponent(personId)}`, {
     method: 'PATCH',
-    body: { email },
+    body: fields,
   });
+}
+
+export async function updatePersonEmail(personId, email) {
+  return updatePerson(personId, { email });
 }
 
 export async function sendReminder(personId) {

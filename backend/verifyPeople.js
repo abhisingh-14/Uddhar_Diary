@@ -431,6 +431,196 @@ async function runCreateChecks() {
   }
 }
 
+// ---------------------------------------------------------------- rename
+
+async function runRenameChecks() {
+  section('Rename');
+
+  // A dedicated person with an email, so we can prove a name-only edit does not
+  // clobber the email and vice versa.
+  const created = await api('POST', '/api/people', {
+    token: state.token,
+    body: { name: `Rename ${stamp}`, email: `rename.${stamp}@example.com` },
+  });
+  trackPerson(created.json);
+
+  if (!looksLikePerson(created.json)) {
+    check('Rename setup person was created', false, `status=${created.status}`);
+    return;
+  }
+
+  const personId = created.json.id;
+
+  // 1. A valid rename.
+  const renamed = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: `Renamed ${stamp}` },
+  });
+  check('Renaming to a valid new name returns 200', renamed.status === 200, `status=${renamed.status}`);
+  check(
+    'The rename returns the updated name',
+    renamed.json?.name === `Renamed ${stamp}`,
+    `name=${JSON.stringify(renamed.json?.name)}`
+  );
+  check(
+    'A name-only rename leaves the email untouched',
+    renamed.json?.email === `rename.${stamp}@example.com`,
+    `email=${JSON.stringify(renamed.json?.email)}`
+  );
+
+  // 2. Persistence — this is what the browser sees after a refresh.
+  const list = await api('GET', '/api/people', { token: state.token });
+  const listed = Array.isArray(list.json) ? list.json.find((p) => p.id === personId) : null;
+  check(
+    'The rename persists in the people list (survives a refresh)',
+    listed?.name === `Renamed ${stamp}`,
+    `listed=${JSON.stringify(listed?.name)}`
+  );
+
+  // 3. Rejected renames.
+  const emptyRename = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: '' },
+  });
+  check(
+    'Renaming to an empty name returns 400 INVALID_NAME',
+    emptyRename.status === 400 && emptyRename.json?.code === 'INVALID_NAME',
+    `status=${emptyRename.status} code=${emptyRename.json?.code ?? 'none'}`
+  );
+
+  const whitespaceRename = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: '   ' },
+  });
+  check(
+    'Renaming to a whitespace-only name returns 400 INVALID_NAME',
+    whitespaceRename.status === 400 && whitespaceRename.json?.code === 'INVALID_NAME',
+    `status=${whitespaceRename.status} code=${whitespaceRename.json?.code ?? 'none'}`
+  );
+
+  const longRename = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: 'y'.repeat(61) },
+  });
+  check(
+    'Renaming to a 61 character name returns 400 INVALID_NAME',
+    longRename.status === 400 && longRename.json?.code === 'INVALID_NAME',
+    `status=${longRename.status} code=${longRename.json?.code ?? 'none'}`
+  );
+
+  const afterRejections = await api('GET', '/api/people', { token: state.token });
+  const stillRenamed = Array.isArray(afterRejections.json)
+    ? afterRejections.json.find((p) => p.id === personId)
+    : null;
+  check(
+    'A rejected rename leaves the stored name unchanged',
+    stillRenamed?.name === `Renamed ${stamp}`,
+    `name=${JSON.stringify(stillRenamed?.name)}`
+  );
+
+  // 4. Saving a person's own name (new casing only) is not a self-duplicate:
+  //    Postgres excludes the row being updated from the unique index check.
+  const selfRename = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: `Renamed ${stamp}`.toUpperCase() },
+  });
+  check(
+    'Re-saving a person with their own name (new casing) is allowed',
+    selfRename.status === 200 && selfRename.json?.name === `Renamed ${stamp}`.toUpperCase(),
+    `status=${selfRename.status} name=${JSON.stringify(selfRename.json?.name)}`
+  );
+  // Put the casing back so the later assertions read clearly.
+  await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: `Renamed ${stamp}` },
+  });
+
+  // 5. Renaming onto another person's name -> 409 (needs the unique index).
+  const other = await api('POST', '/api/people', {
+    token: state.token,
+    body: { name: `Rename Other ${stamp}` },
+  });
+  trackPerson(other.json);
+
+  const duplicateRename = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { name: `rename other ${stamp}` }, // same name, different casing
+  });
+
+  const duplicateBlocked =
+    duplicateRename.status === 409 && duplicateRename.json?.code === 'PERSON_EXISTS';
+
+  if (duplicateBlocked) {
+    check(
+      "Renaming onto another person's name (different casing) returns 409 PERSON_EXISTS",
+      true,
+      'status=409'
+    );
+  } else if (duplicateRename.status === 200) {
+    check(
+      "Renaming onto another person's name (different casing) returns 409 PERSON_EXISTS",
+      false,
+      `got 200 — the unique index looks missing, run ${path.basename(MIGRATION_FILE)}`
+    );
+  } else {
+    check(
+      "Renaming onto another person's name (different casing) returns 409 PERSON_EXISTS",
+      false,
+      `unexpected status=${duplicateRename.status} body=${duplicateRename.text?.slice(0, 120)}`
+    );
+  }
+
+  if (duplicateBlocked) {
+    const afterDuplicate = await api('GET', '/api/people', { token: state.token });
+    const unchanged = Array.isArray(afterDuplicate.json)
+      ? afterDuplicate.json.find((p) => p.id === personId)
+      : null;
+    check(
+      'The blocked duplicate rename left the name unchanged',
+      unchanged?.name === `Renamed ${stamp}`,
+      `name=${JSON.stringify(unchanged?.name)}`
+    );
+  } else {
+    note(
+      'Skipped "the blocked duplicate rename left the name unchanged" because the duplicate was not blocked ' +
+        '(the unique index is not applied yet).'
+    );
+  }
+
+  // 6. The email-only path must still work: both now share one PATCH route.
+  const emailOnly = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { email: `moved.${stamp}@example.com` },
+  });
+  check(
+    'An email-only edit still works and leaves the name alone',
+    emailOnly.status === 200 &&
+      emailOnly.json?.email === `moved.${stamp}@example.com` &&
+      emailOnly.json?.name === `Renamed ${stamp}`,
+    `status=${emailOnly.status} name=${JSON.stringify(emailOnly.json?.name)} email=${JSON.stringify(emailOnly.json?.email)}`
+  );
+
+  const clearedEmail = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: { email: null },
+  });
+  check(
+    'Clearing the email still works',
+    clearedEmail.status === 200 && clearedEmail.json?.email === null,
+    `status=${clearedEmail.status} email=${JSON.stringify(clearedEmail.json?.email ?? null)}`
+  );
+
+  const noFields = await api('PATCH', `/api/people/${personId}`, {
+    token: state.token,
+    body: {},
+  });
+  check(
+    'A PATCH with neither name nor email returns 400',
+    noFields.status === 400,
+    `status=${noFields.status}`
+  );
+}
+
 // ---------------------------------------------------------------- summary
 
 function printSummary() {
@@ -503,6 +693,7 @@ async function main() {
   check('Signed-in user id was returned', typeof state.userId === 'string' && state.userId.length > 0);
 
   await runCreateChecks();
+  await runRenameChecks();
 }
 
 (async () => {

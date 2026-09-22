@@ -7,6 +7,30 @@ const { sendReminderEmail } = require("../services/emailService");
 const router = express.Router();
 router.use(requireAuth);
 
+// Shared by the create and update routes so the two cannot drift apart.
+const PERSON_EXISTS_RESPONSE = {
+  error: "You already have a person with this name",
+  code: "PERSON_EXISTS",
+};
+
+// The (user_id, lower(name)) unique index reports duplicates as 23505.
+// Postgres excludes the row being updated, so re-saving a person's own
+// unchanged name is never a violation of their own row.
+function isDuplicateNameError(error) {
+  return error?.code === "23505";
+}
+
+function validatePersonName(name) {
+  if (typeof name !== "string" || name.trim() === "") {
+    return { error: "Name is required" };
+  }
+  const trimmedName = name.trim();
+  if (trimmedName.length > 60) {
+    return { error: "Name must be 60 characters or fewer" };
+  }
+  return { trimmedName };
+}
+
 router.get("/", async (req, res, next) => {
   try {
     const trimmedUserId = req.userId;
@@ -34,15 +58,11 @@ router.post("/", async (req, res, next) => {
     
     const trimmedUserId = req.userId;
 
-    if (typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "Name is required", code: "INVALID_NAME" });
+    const nameResult = validatePersonName(name);
+    if (nameResult.error) {
+      return res.status(400).json({ error: nameResult.error, code: "INVALID_NAME" });
     }
-    const trimmedName = name.trim();
-    if (trimmedName.length > 60) {
-      return res
-        .status(400)
-        .json({ error: "Name must be 60 characters or fewer", code: "INVALID_NAME" });
-    }
+    const trimmedName = nameResult.trimmedName;
 
     // Email is optional: omitted, null, or empty all mean "no email yet".
     let trimmedEmail = null;
@@ -79,11 +99,8 @@ router.post("/", async (req, res, next) => {
     if (error) {
       // 23505 = unique_violation raised by the (user_id, lower(name)) index.
       // Map it to a friendly 409 instead of letting it become a 500.
-      if (error.code === "23505") {
-        return res.status(409).json({
-          error: "You already have a person with this name",
-          code: "PERSON_EXISTS",
-        });
+      if (isDuplicateNameError(error)) {
+        return res.status(409).json(PERSON_EXISTS_RESPONSE);
       }
       console.error("Error creating person:", error);
       return res.status(500).json({ error: "Failed to create person" });
@@ -102,27 +119,44 @@ router.patch("/:personId", async (req, res, next) => {
       return res.status(400).json({ error: "personId is invalid" });
     }
 
-    const { email } = req.body || {};
+    const { name, email } = req.body || {};
     const trimmedUserId = req.userId;
 
-    // Validate email input
-    if (email === undefined) {
-      return res.status(400).json({ error: "email is required" });
-    }
-    if (email !== null && typeof email !== "string") {
-      return res.status(400).json({ error: "email must be a string or null" });
+    if (name === undefined && email === undefined) {
+      return res.status(400).json({ error: "Provide a name or an email to update" });
     }
 
-    let trimmedEmail = null;
-    if (email !== null) {
-      if (email.trim() === "") {
-        return res.status(400).json({ error: "email cannot be an empty string" });
+    // Only the fields actually sent are written, so a name-only edit leaves the
+    // email alone and an email-only edit leaves the name alone.
+    const updates = {};
+
+    if (name !== undefined) {
+      // Same validation the person-create route uses, kept in one shared place.
+      const nameResult = validatePersonName(name);
+      if (nameResult.error) {
+        return res.status(400).json({ error: nameResult.error, code: "INVALID_NAME" });
       }
-      // Same check the person-create route uses, kept in one shared place.
-      if (!EMAIL_PATTERN.test(email.trim())) {
-        return res.status(400).json({ error: "email must be a valid email address" });
+      updates.name = nameResult.trimmedName;
+    }
+
+    if (email !== undefined) {
+      // Validate email input
+      if (email !== null && typeof email !== "string") {
+        return res.status(400).json({ error: "email must be a string or null" });
       }
-      trimmedEmail = email.trim();
+
+      let trimmedEmail = null;
+      if (email !== null) {
+        if (email.trim() === "") {
+          return res.status(400).json({ error: "email cannot be an empty string" });
+        }
+        // Same check the person-create route uses, kept in one shared place.
+        if (!EMAIL_PATTERN.test(email.trim())) {
+          return res.status(400).json({ error: "email must be a valid email address" });
+        }
+        trimmedEmail = email.trim();
+      }
+      updates.email = trimmedEmail;
     }
 
     // Verify person belongs to this user (prevents cross-user access via guessed personId)
@@ -141,15 +175,21 @@ router.patch("/:personId", async (req, res, next) => {
       return res.status(404).json({ error: "Person not found" });
     }
 
-    // Update the email
+    // Update only the fields that were provided
     const { data: updatedPerson, error: updateError } = await supabase
       .from("people")
-      .update({ email: trimmedEmail })
+      .update(updates)
       .eq("id", personId)
       .select("id, name, email")
       .single();
 
     if (updateError) {
+      // Same unique index as create: renaming onto another person's name raises
+      // 23505. Postgres excludes the row being updated, so saving a person's own
+      // unchanged name is not a violation.
+      if (isDuplicateNameError(updateError)) {
+        return res.status(409).json(PERSON_EXISTS_RESPONSE);
+      }
       console.error("Failed to update person:", updateError);
       return res.status(500).json({ error: "Failed to update person" });
     }

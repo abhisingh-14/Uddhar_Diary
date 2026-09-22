@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, Check, Loader2, Bell, UserPlus } from 'lucide-react'
-import { createPerson, getBalances, getPeople, sendReminder, updatePersonEmail } from '../../api/client.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AlertCircle, Check, Loader2, Bell, Pencil, UserPlus } from 'lucide-react'
+import { createPerson, getBalances, getPeople, sendReminder, updatePerson, updatePersonEmail } from '../../api/client.js'
 
 export default function PeopleContacts() {
   const [status, setStatus] = useState('loading')
@@ -17,6 +17,14 @@ export default function PeopleContacts() {
   const [newEmail, setNewEmail] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [addErrors, setAddErrors] = useState({ name: '', email: '', form: '' })
+
+  // Inline name edit (one row at a time)
+  const [editingNameId, setEditingNameId] = useState(null)
+  const [nameDraft, setNameDraft] = useState('')
+  const [isSavingName, setIsSavingName] = useState(false)
+  const [nameError, setNameError] = useState({ personId: null, message: '' })
+  // Set when Escape cancels, so the blur that follows the unmount doesn't save.
+  const nameEditCancelled = useRef(false)
 
   const loadPeople = useCallback(async () => {
     setStatus('loading')
@@ -69,6 +77,57 @@ export default function PeopleContacts() {
       setTimeout(() => {
         setSaveStatus(prev => ({ ...prev, [personId]: null }))
       }, 2000)
+    }
+  }
+
+  const startNameEdit = (person) => {
+    nameEditCancelled.current = false
+    setEditingNameId(person.id)
+    setNameDraft(person.name)
+    setNameError({ personId: null, message: '' })
+  }
+
+  const cancelNameEdit = () => {
+    nameEditCancelled.current = true
+    setEditingNameId(null)
+    setNameDraft('')
+    setNameError({ personId: null, message: '' })
+  }
+
+  const saveNameEdit = async (personId) => {
+    // Blur also fires when Escape unmounts the input and when the field is
+    // disabled mid-save; neither of those should trigger a write.
+    if (nameEditCancelled.current) {
+      nameEditCancelled.current = false
+      return
+    }
+    if (isSavingName) return
+
+    const person = people.find(p => p.id === personId)
+    if (!person) return
+
+    const trimmedName = nameDraft.trim()
+
+    // Nothing to do when unchanged, and an empty name is blocked rather than
+    // saved as a blank — the server rejects it anyway.
+    if (trimmedName === '' || trimmedName === person.name) {
+      cancelNameEdit()
+      return
+    }
+
+    setIsSavingName(true)
+    setNameError({ personId: null, message: '' })
+
+    try {
+      const updatedPerson = await updatePerson(personId, { name: trimmedName })
+      setPeople(prev => prev.map(p => p.id === personId ? updatedPerson : p))
+      cancelNameEdit()
+    } catch (err) {
+      // Same messages the Add-person form shows: a duplicate or invalid name is
+      // the same problem wherever it is typed. Keep the draft so it can be fixed.
+      setNameError({ personId, message: err.message || 'That name cannot be used.' })
+    } finally {
+      setIsSavingName(false)
     }
   }
 
@@ -156,7 +215,7 @@ export default function PeopleContacts() {
     <div className="mt-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <p className="max-w-[430px] text-sm leading-6 text-muted-foreground">
-          Manage email addresses for people you track with. This enables reminders.
+          Manage names and email addresses for people you track with. An email enables reminders.
         </p>
         {!showAddForm && (
           <button
@@ -303,7 +362,51 @@ export default function PeopleContacts() {
                 className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">{person.name}</p>
+                  {editingNameId === person.id ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={nameDraft}
+                        onChange={(e) => {
+                          setNameDraft(e.target.value)
+                          if (nameError.personId === person.id) {
+                            setNameError({ personId: null, message: '' })
+                          }
+                        }}
+                        onBlur={() => saveNameEdit(person.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            e.target.blur()
+                          }
+                          if (e.key === 'Escape') {
+                            e.preventDefault()
+                            cancelNameEdit()
+                          }
+                        }}
+                        maxLength={60}
+                        autoFocus
+                        aria-label={`Name for ${person.name}`}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        disabled={isSavingName}
+                      />
+                      {nameError.personId === person.id && nameError.message && (
+                        <p className="mt-1 text-xs text-destructive">{nameError.message}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground">{person.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => startNameEdit(person)}
+                        aria-label={`Edit name for ${person.name}`}
+                        className="text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" strokeWidth={1.8} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1">
                   <input
@@ -315,35 +418,33 @@ export default function PeopleContacts() {
                     disabled={saveStatus[person.id] === 'saving'}
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-[120px] shrink-0 items-center justify-end gap-2">
                   {person.theyOweYouPaise > 0 && (
                     <button
                       type="button"
                       onClick={() => handleRemind(person.id)}
                       disabled={remindStatus[person.id] === 'sending'}
-                      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Remind"
+                      className="group flex h-8 items-center justify-center rounded-lg bg-primary px-2 text-xs font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {remindStatus[person.id] === 'sending' ? (
-                        <>
-                          <Loader2 className="size-3 animate-spin" strokeWidth={1.8} />
-                          Sending…
-                        </>
+                        <Loader2 className="size-3.5 shrink-0 animate-spin" strokeWidth={1.8} />
                       ) : (
-                        <>
-                          <Bell className="size-3" strokeWidth={2} />
-                          Remind
-                        </>
+                        <Bell className="size-3.5 shrink-0" strokeWidth={2} />
                       )}
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-in-out group-hover:ml-1.5 group-hover:max-w-[70px] group-hover:opacity-100">
+                        {remindStatus[person.id] === 'sending' ? 'Sending…' : 'Remind'}
+                      </span>
                     </button>
                   )}
                   {saveStatus[person.id] === 'saving' && (
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" strokeWidth={1.8} />
+                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" strokeWidth={1.8} />
                   )}
                   {saveStatus[person.id] === 'success' && (
-                    <Check className="size-4 text-green-500" strokeWidth={2.5} />
+                    <Check className="size-4 shrink-0 text-green-500" strokeWidth={2.5} />
                   )}
                   {saveStatus[person.id] === 'error' && (
-                    <span className="text-xs text-destructive">Failed</span>
+                    <span className="shrink-0 text-xs text-destructive">Failed</span>
                   )}
                 </div>
               </div>
