@@ -1,7 +1,7 @@
 const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
 const { requireAuth } = require("../middleware/requireAuth");
-const { UUID_PATTERN } = require("../lib/validators");
+const { UUID_PATTERN, EMAIL_PATTERN } = require("../lib/validators");
 const { sendReminderEmail } = require("../services/emailService");
 
 const router = express.Router();
@@ -35,21 +35,40 @@ router.post("/", async (req, res, next) => {
     const trimmedUserId = req.userId;
 
     if (typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "name is required" });
+      return res.status(400).json({ error: "Name is required", code: "INVALID_NAME" });
     }
     const trimmedName = name.trim();
+    if (trimmedName.length > 60) {
+      return res
+        .status(400)
+        .json({ error: "Name must be 60 characters or fewer", code: "INVALID_NAME" });
+    }
 
+    // Email is optional: omitted, null, or empty all mean "no email yet".
     let trimmedEmail = null;
     if (email !== undefined && email !== null) {
-      if (typeof email !== "string" || email.trim() === "") {
-        return res.status(400).json({ error: "email must be a valid string if provided" });
+      if (typeof email !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Email must be a valid email address", code: "INVALID_EMAIL" });
       }
-      trimmedEmail = email.trim();
+      const candidateEmail = email.trim();
+      if (candidateEmail !== "") {
+        // Reuses the same format check as the email-update (PATCH) route.
+        if (!EMAIL_PATTERN.test(candidateEmail)) {
+          return res
+            .status(400)
+            .json({ error: "Email must be a valid email address", code: "INVALID_EMAIL" });
+        }
+        trimmedEmail = candidateEmail;
+      }
     }
 
     const { data, error } = await supabase
       .from("people")
       .insert({
+        // Owner always comes from the verified token. A userId in the request
+        // body is deliberately ignored, so nobody can create people for another user.
         user_id: trimmedUserId,
         name: trimmedName,
         email: trimmedEmail,
@@ -58,6 +77,14 @@ router.post("/", async (req, res, next) => {
       .single();
 
     if (error) {
+      // 23505 = unique_violation raised by the (user_id, lower(name)) index.
+      // Map it to a friendly 409 instead of letting it become a 500.
+      if (error.code === "23505") {
+        return res.status(409).json({
+          error: "You already have a person with this name",
+          code: "PERSON_EXISTS",
+        });
+      }
       console.error("Error creating person:", error);
       return res.status(500).json({ error: "Failed to create person" });
     }
@@ -91,9 +118,8 @@ router.patch("/:personId", async (req, res, next) => {
       if (email.trim() === "") {
         return res.status(400).json({ error: "email cannot be an empty string" });
       }
-      // Simple email validation regex
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
+      // Same check the person-create route uses, kept in one shared place.
+      if (!EMAIL_PATTERN.test(email.trim())) {
         return res.status(400).json({ error: "email must be a valid email address" });
       }
       trimmedEmail = email.trim();

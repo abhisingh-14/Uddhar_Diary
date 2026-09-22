@@ -69,6 +69,13 @@ export async function getPeople() {
   return apiClient('/api/people');
 }
 
+export async function createPerson({ name, email }) {
+  return apiClient('/api/people', {
+    method: 'POST',
+    body: { name, email },
+  });
+}
+
 export async function updatePersonEmail(personId, email) {
   return apiClient(`/api/people/${encodeURIComponent(personId)}`, {
     method: 'PATCH',
