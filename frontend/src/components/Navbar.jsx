@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { BarChart3, Calculator, Settings, WalletCards, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo.jsx'
 
 const navItems = [
   { label: 'Split Bill', icon: Calculator, path: '/split' },
@@ -25,11 +26,9 @@ export default function Navbar() {
   return (
     <aside className="flex w-full flex-col border-b border-border bg-sidebar px-5 py-6 md:w-[250px] md:border-b-0 md:border-r md:px-6 md:py-7">
       <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <span className="text-lg">✨</span>
-        </div>
+        <Logo size={40} />
         <div>
-          <p className="font-sans text-[15px] font-semibold tracking-[-0.02em]">Uddhar Diary</p>
+          <p className="font-sans text-[15px] font-semibold tracking-tight">Uddhar Diary</p>
           <p className="text-[11px] text-muted-foreground">Make every rupee count</p>
         </div>
       </div>
