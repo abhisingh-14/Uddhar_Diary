@@ -5,6 +5,9 @@ const UUID_PATTERN =
 // the person-create (POST) route so both enforce exactly the same rule.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// ISO date pattern (YYYY-MM-DD)
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 function validateUserIdField(userId) {
   if (typeof userId !== "string" || userId.trim() === "") {
     return { status: 400, body: { error: "userId is required" } };
@@ -19,5 +22,6 @@ function validateUserIdField(userId) {
 module.exports = {
   UUID_PATTERN,
   EMAIL_PATTERN,
+  ISO_DATE_PATTERN,
   validateUserIdField,
 };

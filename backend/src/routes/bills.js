@@ -3,13 +3,12 @@ const multer = require("multer");
 
 const { supabase } = require("../lib/supabaseClient");
 const { extractBillFromImage } = require("../services/billExtraction");
-const { calculateEvenSplit } = require("../services/splitCalculator");
-const { UUID_PATTERN } = require("../lib/validators");
+const { calculateSplit, SplitError } = require("../services/splitCalculator");
+const { UUID_PATTERN, ISO_DATE_PATTERN } = require("../lib/validators");
 const { requireAuth } = require("../middleware/requireAuth");
 
 const BILL_IMAGES_BUCKET = "bill-images";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 class InvalidMimetypeError extends Error {}
 
@@ -79,6 +78,13 @@ function validateCreateBillBody(body, reqUserId) {
     return { status: 400, body: { error: "total must be a positive number" } };
   }
 
+  // Check for more than 2 decimal places
+  const totalString = total.toString();
+  const decimalIndex = totalString.indexOf('.');
+  if (decimalIndex !== -1 && totalString.length - decimalIndex - 1 > 2) {
+    return { status: 400, body: { error: "total must have at most 2 decimal places" } };
+  }
+
   const categoryId = body?.categoryId;
   if (typeof categoryId !== "string" || !UUID_PATTERN.test(categoryId)) {
     return { status: 400, body: { error: "categoryId is invalid" } };
@@ -94,101 +100,83 @@ function validateCreateBillBody(body, reqUserId) {
     }
   }
 
+  const source = body?.source ?? 'photo';
+  if (source !== 'photo' && source !== 'manual') {
+    return { status: 400, body: { error: "source must be 'photo' or 'manual'" } };
+  }
+
   const items = body?.items;
-  if (!Array.isArray(items) || items.length === 0) {
-    return { status: 400, body: { error: "items must be a non-empty array" } };
-  }
+  if (source === 'photo') {
+    if (!Array.isArray(items) || items.length === 0) {
+      return { status: 400, body: { error: "items must be a non-empty array for photo source" } };
+    }
 
-  const normalizedItems = [];
-  for (const item of items) {
-    if (typeof item?.name !== "string" || item.name.trim() === "") {
-      return { status: 400, body: { error: "each item must have a name" } };
-    }
-    if (typeof item?.price !== "number" || !Number.isFinite(item.price)) {
-      return {
-        status: 400,
-        body: { error: "each item must have a numeric price" },
-      };
-    }
-    const quantity = item?.quantity ?? 1;
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      return {
-        status: 400,
-        body: { error: "each item quantity must be a positive integer" },
-      };
-    }
-    normalizedItems.push({
-      name: item.name.trim(),
-      price: item.price,
-      quantity,
-    });
-  }
-
-  let calculatedTotal = 0;
-  for (const item of normalizedItems) {
-    calculatedTotal += item.price * item.quantity;
-  }
-  
-  if (Math.abs(calculatedTotal - total) > 0.01) {
-    return {
-      status: 400,
-      body: {
-        error: `Item totals do not match bill total. Items sum to ${calculatedTotal.toFixed(2)}, but bill total is ${total.toFixed(2)}.`
+    const normalizedItems = [];
+    for (const item of items) {
+      if (typeof item?.name !== "string" || item.name.trim() === "") {
+        return { status: 400, body: { error: "each item must have a name" } };
       }
-    };
-  }
-
-  const people = body?.people;
-  if (!Array.isArray(people) || people.length === 0) {
-    return { status: 400, body: { error: "people must be a non-empty array" } };
-  }
-
-  const personIds = [];
-  const amountsPaid = {};
-  for (const person of people) {
-    if (typeof person?.personId !== "string" || !UUID_PATTERN.test(person.personId)) {
-      return { status: 400, body: { error: "each person must have a valid personId" } };
+      if (typeof item?.price !== "number" || !Number.isFinite(item.price)) {
+        return {
+          status: 400,
+          body: { error: "each item must have a numeric price" },
+        };
+      }
+      const quantity = item?.quantity ?? 1;
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return {
+          status: 400,
+          body: { error: "each item quantity must be a positive integer" },
+        };
+      }
+      normalizedItems.push({
+        name: item.name.trim(),
+        price: item.price,
+        quantity,
+      });
     }
-    if (person.personId === userId) {
+
+    let calculatedTotal = 0;
+    for (const item of normalizedItems) {
+      calculatedTotal += item.price * item.quantity;
+    }
+    
+    if (Math.abs(calculatedTotal - total) > 0.01) {
       return {
         status: 400,
         body: {
-          error:
-            "people must not include userId; the bill owner is tracked separately",
-        },
+          error: `Item totals do not match bill total. Items sum to ${calculatedTotal.toFixed(2)}, but bill total is ${total.toFixed(2)}.`
+        }
       };
     }
-    if (
-      typeof person?.amountPaid !== "number" ||
-      !Number.isFinite(person.amountPaid) ||
-      person.amountPaid < 0
-    ) {
-      return {
-        status: 400,
-        body: { error: "each person must have a non-negative amountPaid" },
-      };
-    }
-    if (Object.hasOwn(amountsPaid, person.personId)) {
-      return {
-        status: 400,
-        body: { error: "people must not contain duplicate personId values" },
-      };
-    }
-    personIds.push(person.personId);
-    amountsPaid[person.personId] = person.amountPaid;
-  }
 
-  return {
-    userId,
-    storagePath: storagePath.trim(),
-    merchantName: merchantName.trim(),
-    total,
-    categoryId,
-    billDate: billDate ?? null,
-    items: normalizedItems,
-    personIds,
-    amountsPaid,
-  };
+    return {
+      userId,
+      storagePath: storagePath.trim(),
+      merchantName: merchantName.trim(),
+      total,
+      categoryId,
+      billDate: billDate ?? null,
+      items: normalizedItems,
+      source,
+    };
+  } else {
+    // Manual source: items should be empty or absent
+    if (items !== undefined && items !== null && (!Array.isArray(items) || items.length > 0)) {
+      return { status: 400, body: { error: "items must be empty or absent for manual source" } };
+    }
+
+    return {
+      userId,
+      storagePath: storagePath.trim(),
+      merchantName: merchantName.trim(),
+      total,
+      categoryId,
+      billDate: billDate ?? null,
+      items: [],
+      source,
+    };
+  }
 }
 
 function mapDebtRow(row) {
@@ -274,11 +262,110 @@ router.post("/", async (req, res, next) => {
       return res.status(validation.status).json(validation.body);
     }
 
-    const splitEntries = calculateEvenSplit(
-      validation.total,
-      validation.personIds,
-      validation.amountsPaid
-    );
+    // Validate and extract split-related fields
+    const paidBy = req.body?.paidBy;
+    if (typeof paidBy !== "string" || paidBy.trim() === "") {
+      return res.status(400).json({ error: "paidBy is required" });
+    }
+
+    const participantIds = req.body?.participantIds;
+    if (!Array.isArray(participantIds) || participantIds.length === 0) {
+      return res.status(400).json({ error: "participantIds must be a non-empty array" });
+    }
+
+    // Validate each participantId is a valid UUID
+    for (const personId of participantIds) {
+      if (typeof personId !== "string" || !UUID_PATTERN.test(personId)) {
+        return res.status(400).json({ error: "each participantId must be a valid UUID" });
+      }
+      if (personId === validation.userId) {
+        return res.status(400).json({ error: "participantIds must not include userId" });
+      }
+    }
+
+    // Validate paidBy is either 'you' or in participantIds
+    if (paidBy !== 'you' && !participantIds.includes(paidBy)) {
+      return res.status(400).json({ error: "paidBy must be 'you' or one of the participantIds" });
+    }
+
+    // Validate alreadyPaid if present
+    const alreadyPaidRaw = req.body?.alreadyPaid;
+    const alreadyPaid = {};
+    if (alreadyPaidRaw !== undefined && alreadyPaidRaw !== null) {
+      if (typeof alreadyPaidRaw !== "object" || Array.isArray(alreadyPaidRaw)) {
+        return res.status(400).json({ error: "alreadyPaid must be an object" });
+      }
+      for (const [personId, amount] of Object.entries(alreadyPaidRaw)) {
+        if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) {
+          return res.status(400).json({ error: `alreadyPaid amount for ${personId} must be a non-negative number` });
+        }
+        // Check for more than 2 decimal places
+        const amountString = amount.toString();
+        const decimalIndex = amountString.indexOf('.');
+        if (decimalIndex !== -1 && amountString.length - decimalIndex - 1 > 2) {
+          return res.status(400).json({ error: `alreadyPaid amount for ${personId} must have at most 2 decimal places` });
+        }
+        alreadyPaid[personId] = amount;
+      }
+    }
+
+    // Verify all personIds belong to the user
+    const allPersonIds = [...participantIds];
+    if (paidBy !== 'you') {
+      allPersonIds.push(paidBy);
+    }
+    // Also validate any personIds in alreadyPaid
+    for (const personId of Object.keys(alreadyPaid)) {
+      if (!allPersonIds.includes(personId)) {
+        return res.status(400).json({ error: `alreadyPaid personId ${personId} must be in participantIds or be the paidBy` });
+      }
+    }
+
+    const uniquePersonIds = [...new Set(allPersonIds)];
+    for (const personId of uniquePersonIds) {
+      const { data: person, error: personError } = await supabase
+        .from("people")
+        .select("id")
+        .eq("id", personId)
+        .eq("user_id", validation.userId)
+        .single();
+
+      if (personError || !person) {
+        return res.status(400).json({ error: `personId ${personId} does not belong to user` });
+      }
+    }
+
+    // Convert total to paise
+    const totalPaise = Math.round(validation.total * 100);
+
+    // Convert alreadyPaid from rupees to paise
+    const alreadyPaidPaise = {};
+    for (const [personId, amount] of Object.entries(alreadyPaid)) {
+      alreadyPaidPaise[personId] = Math.round(amount * 100);
+    }
+
+    // Calculate split using the new calculator
+    let splitResult;
+    try {
+      splitResult = calculateSplit({
+        totalPaise,
+        participantIds,
+        payer: paidBy,
+        alreadyPaid: alreadyPaidPaise
+      });
+    } catch (splitError) {
+      if (splitError instanceof SplitError) {
+        return res.status(400).json({ error: splitError.message });
+      }
+      throw splitError;
+    }
+
+    // Format split entries for the RPC (convert back to rupees for the old RPC format)
+    const splitEntries = splitResult.debts.map(debt => ({
+      personId: debt.personId,
+      owedAmount: debt.amountPaise / 100,
+      direction: debt.direction
+    }));
 
     const { data: billId, error: rpcError } = await supabase.rpc(
       "create_bill_with_split",
@@ -291,6 +378,8 @@ router.post("/", async (req, res, next) => {
         p_bill_date: validation.billDate,
         p_items: validation.items,
         p_split_entries: splitEntries,
+        p_user_share_paise: splitResult.userSharePaise,
+        p_source: validation.source,
       }
     );
 

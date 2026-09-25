@@ -1,9 +1,3 @@
--- Run this in the Supabase SQL Editor to fix "permission denied for table bills".
--- Adds SECURITY DEFINER so the function runs with the owner's privileges
--- instead of the calling role's (service_role) privileges. Access to the
--- function itself is still locked down by the existing REVOKE/GRANT below,
--- so this doesn't widen who can call it — only what it's allowed to do once called.
-
 CREATE OR REPLACE FUNCTION public.create_bill_with_split(
   p_user_id uuid,
   p_image_url text,
@@ -64,13 +58,6 @@ BEGIN
       CONTINUE;
     END IF;
 
-    IF NOT EXISTS (
-      SELECT 1 FROM public.people
-      WHERE id = (v_entry ->> 'personId')::uuid AND user_id = p_user_id
-    ) THEN
-      RAISE EXCEPTION 'person % does not belong to user %', v_entry ->> 'personId', p_user_id;
-    END IF;
-
     INSERT INTO public.debts (bill_id, person_id, direction, amount_paise)
     VALUES (
       v_bill_id,
@@ -83,11 +70,3 @@ BEGIN
   RETURN v_bill_id;
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.create_bill_with_split(
-  uuid, text, text, numeric, uuid, date, jsonb, jsonb
-) FROM PUBLIC;
-
-GRANT EXECUTE ON FUNCTION public.create_bill_with_split(
-  uuid, text, text, numeric, uuid, date, jsonb, jsonb
-) TO service_role;
