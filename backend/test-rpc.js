@@ -2,12 +2,12 @@ require('dotenv').config();
 const { supabase } = require('./src/lib/supabaseClient');
 
 async function test() {
-  const userId = '999af4e5-6e7b-4512-9202-95c1a29dfff0';
-  const personId = '299e404d-7648-4fbf-b42a-45748c3bc9ce'; // Aditya
+  const userId = '54c0d586-58ca-4402-88de-da030b96b270';
+  const personId = '6263291e-29e9-483f-b41c-eb6b134ae869'; // Aditya
   
   const payload = {
     p_user_id: userId,
-    p_image_url: '999af4e5-6e7b-4512-9202-95c1a29dfff0/1787589268165-sample.png',
+    p_image_url: '54c0d586-58ca-4402-88de-da030b96b270/1787589268165-sample.png',
     p_merchant_name: 'Test Merchant',
     p_total_amount: 101.04,
     p_category_id: 'eba7fe7e-4bf7-42a9-8efe-88f77f9d1e7b', // Food
