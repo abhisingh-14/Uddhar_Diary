@@ -63,9 +63,21 @@ function validateRequest(req) {
 function validateCreateBillBody(body, reqUserId) {
   const userId = reqUserId;
 
+  const source = body?.source ?? 'photo';
+  if (source !== 'photo' && source !== 'manual') {
+    return { status: 400, body: { error: "source must be 'photo' or 'manual'" } };
+  }
+
   const storagePath = body?.storagePath;
-  if (typeof storagePath !== "string" || storagePath.trim() === "") {
-    return { status: 400, body: { error: "storagePath is required" } };
+  if (source === 'photo') {
+    if (typeof storagePath !== "string" || storagePath.trim() === "") {
+      return { status: 400, body: { error: "storagePath is required" } };
+    }
+  } else {
+    // source === 'manual'
+    if (storagePath !== undefined && storagePath !== null) {
+      return { status: 400, body: { error: "storagePath must be absent or null for manual source" } };
+    }
   }
 
   const merchantName = body?.merchantName;
@@ -98,11 +110,6 @@ function validateCreateBillBody(body, reqUserId) {
         body: { error: "billDate must be YYYY-MM-DD or null" },
       };
     }
-  }
-
-  const source = body?.source ?? 'photo';
-  if (source !== 'photo' && source !== 'manual') {
-    return { status: 400, body: { error: "source must be 'photo' or 'manual'" } };
   }
 
   const items = body?.items;
@@ -168,7 +175,7 @@ function validateCreateBillBody(body, reqUserId) {
 
     return {
       userId,
-      storagePath: storagePath.trim(),
+      storagePath: null,
       merchantName: merchantName.trim(),
       total,
       categoryId,
@@ -180,12 +187,11 @@ function validateCreateBillBody(body, reqUserId) {
 }
 
 function mapDebtRow(row) {
-  const amount = Number(row.amount_paise) / 100;
   return {
     id: row.id,
     personId: row.person_id,
     personName: row.people?.name ?? "Unknown person",
-    owedAmount: row.direction === "they_owe_you" ? amount : -amount,
+    amountPaise: row.amount_paise,
     direction: row.direction,
   };
 }
