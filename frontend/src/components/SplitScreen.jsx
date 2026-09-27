@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AlertCircle, ArrowLeft, Check, Plus, UserPlus, Users } from 'lucide-react'
 import { apiClient } from '../api/client.js'
-import { calculateEvenSplit } from '../lib/splitPreview.js'
+import { calculateSplit } from '../lib/splitPreview.js'
 
 export default function SplitScreen({ bill, onSaved, onBack }) {
   const [people, setPeople] = useState([])
@@ -10,6 +10,7 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
 
   const [selectedIds, setSelectedIds] = useState([])
   const [amountsPaid, setAmountsPaid] = useState({})
+  const [payer, setPayer] = useState('you')
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
@@ -41,16 +42,21 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
   }, [])
 
   const total = Number(bill?.total || 0)
-  const preview = calculateEvenSplit(total, selectedIds, amountsPaid)
-  const previewByPerson = Object.fromEntries(preview.map((entry) => [entry.personId, entry]))
-  const perPersonShare = selectedIds.length ? total / selectedIds.length : 0
+  const preview = calculateSplit({ totalAmount: total, participantIds: selectedIds, payer, alreadyPaid: amountsPaid })
+  const previewByPerson = Object.fromEntries(preview.debts.map((entry) => [entry.personId, entry]))
 
   function togglePerson(personId) {
-    setSelectedIds((current) =>
-      current.includes(personId)
+    setSelectedIds((current) => {
+      const newSelection = current.includes(personId)
         ? current.filter((id) => id !== personId)
-        : [...current, personId],
-    )
+        : [...current, personId]
+
+      if (payer !== 'you' && !newSelection.includes(payer)) {
+        setPayer('you')
+      }
+
+      return newSelection
+    })
   }
 
   function setAmountPaid(personId, value) {
@@ -89,21 +95,36 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
     setSaveError('')
 
     try {
+      const requestBody = {
+        storagePath: bill.storagePath,
+        merchantName: bill.merchantName,
+        total,
+        categoryId: bill.categoryId,
+        billDate: bill.billDate || null,
+        items: bill.items,
+        paidBy: payer,
+        participantIds: selectedIds,
+        source: bill.source ?? 'photo',
+      }
+
+      // Only include alreadyPaid when payer is 'you'
+      if (payer === 'you') {
+        const alreadyPaidObj = {}
+        for (const personId of selectedIds) {
+          const amount = Number(amountsPaid[personId] || 0)
+          if (amount > 0) {
+            alreadyPaidObj[personId] = amount
+          }
+        }
+        if (Object.keys(alreadyPaidObj).length > 0) {
+          requestBody.alreadyPaid = alreadyPaidObj
+        }
+      }
+
       const response = await apiClient('/api/bills', {
-        body: {
-          storagePath: bill.storagePath,
-          merchantName: bill.merchantName,
-          total,
-          categoryId: bill.categoryId,
-          billDate: bill.billDate || null,
-          items: bill.items,
-          people: selectedIds.map((personId) => ({
-            personId,
-            amountPaid: Number(amountsPaid[personId] || 0),
-          })),
-        },
+        body: requestBody,
       })
-      
+
       const enrichedDebts = response.debts?.map(debt => {
         const person = people.find(p => p.id === debt.personId)
         return {
@@ -111,7 +132,7 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
           personName: debt.personName || person?.name || 'Unknown person'
         }
       })
-      
+
       onSaved({ ...response, debts: enrichedDebts || [] })
     } catch (err) {
       setSaveError(err.message || 'Failed to save bill')
@@ -146,6 +167,27 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
             <h3 className="text-sm font-semibold text-foreground">People</h3>
             <span className="text-xs text-muted-foreground">{selectedIds.length} selected</span>
           </div>
+
+          {selectedIds.length > 0 && (
+            <div className="mt-4 flex items-center gap-3">
+              <label className="text-xs font-medium text-foreground">Paid by</label>
+              <select
+                value={payer}
+                onChange={(e) => setPayer(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="you">You</option>
+                {selectedIds.map((personId) => {
+                  const person = people.find((p) => p.id === personId)
+                  return (
+                    <option key={personId} value={personId}>
+                      {person?.name ?? 'Unknown'}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
+          )}
 
           {isLoadingPeople && <p className="mt-5 text-xs text-muted-foreground">Loading people…</p>}
 
@@ -186,19 +228,21 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
                       )}
                     </span>
                   </label>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <span className="text-[11px] text-muted-foreground">Paid ₹</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={amountsPaid[person.id] ?? 0}
-                      disabled={!isSelected}
-                      onChange={(event) => setAmountPaid(person.id, event.target.value)}
-                      aria-label={`Amount already paid by ${person.name}`}
-                      className="w-20 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
-                    />
-                  </div>
+                  {payer === 'you' && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="text-[11px] text-muted-foreground">Paid ₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={amountsPaid[person.id] ?? 0}
+                        disabled={!isSelected}
+                        onChange={(event) => setAmountPaid(person.id, event.target.value)}
+                        aria-label={`Amount already paid by ${person.name}`}
+                        className="w-20 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
+                      />
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -264,41 +308,41 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
             <span className="text-xs text-muted-foreground">Bill total</span>
             <span className="text-lg font-semibold">₹{total.toFixed(2)}</span>
           </div>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-xs text-muted-foreground">Even share each</span>
-            <span className="text-sm font-medium">
-              {selectedIds.length ? `₹${perPersonShare.toFixed(2)}` : '—'}
-            </span>
-          </div>
 
           <div className="mt-5 space-y-2 border-t border-border pt-5">
             {selectedIds.length === 0 ? (
               <p className="text-xs text-muted-foreground">Select at least one person to see the split.</p>
             ) : (
-              selectedIds.map((personId) => {
-                const person = people.find((candidate) => candidate.id === personId)
-                const entry = previewByPerson[personId]
-                return (
-                  <div key={personId} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate text-foreground">{person?.name ?? 'Unknown'}</span>
-                    <span
-                      className={`shrink-0 text-xs font-medium ${
-                        entry.settled
-                          ? 'text-muted-foreground'
-                          : entry.direction === 'they_owe_you'
+              <>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate text-foreground">Your share</span>
+                  <span className="shrink-0 text-xs font-medium text-foreground">
+                    ₹{preview.userShare.toFixed(2)}
+                  </span>
+                </div>
+                {preview.debts.map((debt) => {
+                  const person = people.find((candidate) => candidate.id === debt.personId)
+                  return (
+                    <div key={debt.personId} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate text-foreground">{person?.name ?? 'Unknown'}</span>
+                      <span
+                        className={`shrink-0 text-xs font-medium ${
+                          debt.direction === 'they_owe_you'
                             ? 'text-foreground'
                             : 'text-destructive'
-                      }`}
-                    >
-                      {entry.settled
-                        ? 'Settled up'
-                        : entry.direction === 'they_owe_you'
-                          ? `Owes you ₹${entry.owedAmount.toFixed(2)}`
-                          : `You owe ₹${entry.owedAmount.toFixed(2)}`}
-                    </span>
-                  </div>
-                )
-              })
+                        }`}
+                      >
+                        {debt.direction === 'they_owe_you'
+                          ? `Owes you ₹${debt.amount.toFixed(2)}`
+                          : `You owe ₹${debt.amount.toFixed(2)}`}
+                      </span>
+                    </div>
+                  )
+                })}
+                {preview.debts.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Everyone is settled up.</p>
+                )}
+              </>
             )}
           </div>
 

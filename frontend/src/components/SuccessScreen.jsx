@@ -28,7 +28,7 @@ export default function SuccessScreen({ result, onStartOver }) {
             <div key={debt.id} className="flex items-center justify-between gap-4 text-sm">
               <span className="min-w-0 truncate font-medium">{debt.personName}</span>
               <span className="shrink-0 text-muted-foreground">
-                {debt.direction === 'they_owe_you' ? `owes you ₹${Math.abs(debt.owedAmount).toFixed(2)}` : `you owe ₹${Math.abs(debt.owedAmount).toFixed(2)}`}
+                {debt.direction === 'they_owe_you' ? `owes you ₹${(debt.amountPaise / 100).toFixed(2)}` : `you owe ₹${(debt.amountPaise / 100).toFixed(2)}`}
               </span>
             </div>
           ))}
