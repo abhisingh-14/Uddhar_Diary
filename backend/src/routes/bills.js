@@ -4,7 +4,7 @@ const multer = require("multer");
 const { supabase } = require("../lib/supabaseClient");
 const { extractBillFromImage } = require("../services/billExtraction");
 const { calculateSplit, SplitError } = require("../services/splitCalculator");
-const { UUID_PATTERN, ISO_DATE_PATTERN } = require("../lib/validators");
+const { UUID_PATTERN, ISO_DATE_PATTERN, DEFAULT_CATEGORY_ID } = require("../lib/validators");
 const { requireAuth } = require("../middleware/requireAuth");
 
 const BILL_IMAGES_BUCKET = "bill-images";
@@ -81,8 +81,17 @@ function validateCreateBillBody(body, reqUserId) {
   }
 
   const merchantName = body?.merchantName;
-  if (typeof merchantName !== "string" || merchantName.trim() === "") {
-    return { status: 400, body: { error: "merchantName is required" } };
+  if (source === 'photo') {
+    if (typeof merchantName !== "string" || merchantName.trim() === "") {
+      return { status: 400, body: { error: "merchantName is required" } };
+    }
+  } else {
+    // source === 'manual' - merchantName is optional
+    if (merchantName !== undefined && merchantName !== null) {
+      if (typeof merchantName !== "string") {
+        return { status: 400, body: { error: "merchantName must be a string if provided" } };
+      }
+    }
   }
 
   const total = body?.total;
@@ -97,9 +106,25 @@ function validateCreateBillBody(body, reqUserId) {
     return { status: 400, body: { error: "total must have at most 2 decimal places" } };
   }
 
+  // Check if total fits in numeric(10,2) column after converting to paise
+  // numeric(10,2) can store up to 99999999.99 rupees = 9999999999 paise
+  const totalPaise = Math.round(total * 100);
+  if (totalPaise > 9999999999) {
+    return { status: 400, body: { error: "total exceeds maximum allowed amount" } };
+  }
+
   const categoryId = body?.categoryId;
-  if (typeof categoryId !== "string" || !UUID_PATTERN.test(categoryId)) {
-    return { status: 400, body: { error: "categoryId is invalid" } };
+  if (source === 'photo') {
+    if (typeof categoryId !== "string" || !UUID_PATTERN.test(categoryId)) {
+      return { status: 400, body: { error: "categoryId is invalid" } };
+    }
+  } else {
+    // source === 'manual' - categoryId is optional, default to "Other"
+    if (categoryId !== undefined && categoryId !== null) {
+      if (typeof categoryId !== "string" || !UUID_PATTERN.test(categoryId)) {
+        return { status: 400, body: { error: "categoryId is invalid" } };
+      }
+    }
   }
 
   const billDate = body?.billDate;
@@ -147,7 +172,7 @@ function validateCreateBillBody(body, reqUserId) {
     for (const item of normalizedItems) {
       calculatedTotal += item.price * item.quantity;
     }
-    
+
     if (Math.abs(calculatedTotal - total) > 0.01) {
       return {
         status: 400,
@@ -176,10 +201,10 @@ function validateCreateBillBody(body, reqUserId) {
     return {
       userId,
       storagePath: null,
-      merchantName: merchantName.trim(),
+      merchantName: merchantName?.trim() ?? '',
       total,
-      categoryId,
-      billDate: billDate ?? null,
+      categoryId: categoryId ?? DEFAULT_CATEGORY_ID,
+      billDate: billDate ?? new Date().toISOString().split('T')[0],
       items: [],
       source,
     };
@@ -266,6 +291,17 @@ router.post("/", async (req, res, next) => {
     const validation = validateCreateBillBody(req.body, req.userId);
     if (validation.status) {
       return res.status(validation.status).json(validation.body);
+    }
+
+    // Validate categoryId exists in the database (for both photo and manual)
+    const { data: category, error: categoryError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("id", validation.categoryId)
+      .single();
+
+    if (categoryError || !category) {
+      return res.status(400).json({ error: "categoryId does not exist" });
     }
 
     // Validate and extract split-related fields

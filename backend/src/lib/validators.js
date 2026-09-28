@@ -19,9 +19,13 @@ function validateUserIdField(userId) {
   return { userId: trimmedUserId };
 }
 
+// Default "Other" category ID for manual bills
+const DEFAULT_CATEGORY_ID = 'b083e037-5e8a-4062-bc97-5f2ef8dd1fd7';
+
 module.exports = {
   UUID_PATTERN,
   EMAIL_PATTERN,
   ISO_DATE_PATTERN,
   validateUserIdField,
+  DEFAULT_CATEGORY_ID,
 };
