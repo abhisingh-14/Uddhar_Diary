@@ -2,7 +2,7 @@ import { CheckCircle2 } from 'lucide-react'
 
 export default function SuccessScreen({ result, onStartOver }) {
   const debts = result?.debts ?? []
-  const merchantName = result?.merchantName ?? 'Your bill'
+  const merchantName = result?.merchantName?.trim() || 'Quick split'
   const total = Number(result?.total ?? 0)
 
   return (

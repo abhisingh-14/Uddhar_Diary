@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { apiClient } from '../api/client.js'
 import ReviewScreen from './ReviewScreen.jsx'
 import SplitScreen from './SplitScreen.jsx'
 import SuccessScreen from './SuccessScreen.jsx'
+import QuickAmountForm from './QuickAmountForm.jsx'
 import {
   ArrowUpRight,
   Check,
@@ -21,6 +22,27 @@ export default function BillSplitWizard() {
   const [extractedData, setExtractedData] = useState(null)
   const [reviewedBill, setReviewedBill] = useState(null)
   const [saveResult, setSaveResult] = useState(null)
+  const [entryMode, setEntryMode] = useState('amount')
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('billEntryMode')
+      if (saved === 'amount' || saved === 'photo') {
+        setEntryMode(saved)
+      }
+    } catch (err) {
+      // Fall back to default 'amount' if localStorage fails
+    }
+  }, [])
+
+  function handleEntryModeChange(mode) {
+    setEntryMode(mode)
+    try {
+      localStorage.setItem('billEntryMode', mode)
+    } catch (err) {
+      // Silently fail if localStorage is unavailable
+    }
+  }
 
   function selectFile(nextFile) {
     if (nextFile && nextFile.type.startsWith('image/')) {
@@ -54,11 +76,47 @@ export default function BillSplitWizard() {
     <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
       {step === 'upload' && (
         <div className="w-full max-w-[760px]">
-          <div className="max-w-[500px]">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Start with a photo</p>
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">Turn a receipt into a fair split.</h2>
-            <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">Upload a clear photo of your bill and we&apos;ll identify the items, totals, and taxes for you.</p>
+          <div className="mb-8">
+            <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => handleEntryModeChange('amount')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  entryMode === 'amount'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Enter amount
+              </button>
+              <button
+                type="button"
+                onClick={() => handleEntryModeChange('photo')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  entryMode === 'photo'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Bill photo
+              </button>
+            </div>
           </div>
+
+          {entryMode === 'amount' ? (
+            <QuickAmountForm
+              onContinue={(draft) => {
+                setReviewedBill(draft)
+                setStep('split')
+              }}
+            />
+          ) : (
+            <>
+              <div className="max-w-[500px]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Start with a photo</p>
+                <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">Turn a receipt into a fair split.</h2>
+                <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">Upload a clear photo of your bill and we&apos;ll identify the items, totals, and taxes for you.</p>
+              </div>
 
           <div className="mt-10 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
             <div
@@ -119,6 +177,8 @@ export default function BillSplitWizard() {
               {!isLoading && <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />}
             </button>
           </div>
+        </>
+          )}
         </div>
       )}
 
@@ -144,7 +204,13 @@ export default function BillSplitWizard() {
             })
             setStep('success')
           }}
-          onBack={() => setStep('review')}
+          onBack={() => {
+            if (reviewedBill?.source === 'manual') {
+              setStep('upload')
+            } else {
+              setStep('review')
+            }
+          }}
         />
       )}
 

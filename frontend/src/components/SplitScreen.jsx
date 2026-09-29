@@ -96,15 +96,19 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
 
     try {
       const requestBody = {
-        storagePath: bill.storagePath,
         merchantName: bill.merchantName,
         total,
         categoryId: bill.categoryId,
         billDate: bill.billDate || null,
-        items: bill.items,
         paidBy: payer,
         participantIds: selectedIds,
         source: bill.source ?? 'photo',
+      }
+
+      // Only include storagePath and items for photo uploads
+      if (bill.source !== 'manual') {
+        requestBody.storagePath = bill.storagePath
+        requestBody.items = bill.items
       }
 
       // Only include alreadyPaid when payer is 'you'
@@ -150,14 +154,14 @@ export default function SplitScreen({ bill, onSaved, onBack }) {
           className="group mb-6 flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
-          Back to review
+          {bill?.source === 'manual' ? 'Back' : 'Back to review'}
         </button>
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Split the bill</p>
         <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
           Who was in on this?
         </h2>
         <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">
-          Pick everyone sharing {bill?.merchantName ? `the ${bill.merchantName} bill` : 'this bill'} and note anything they&apos;ve already paid.
+          Pick everyone sharing {bill?.merchantName ? `the ${bill.merchantName} bill` : bill?.source === 'manual' ? 'this quick split' : 'this bill'} and note anything they&apos;ve already paid.
         </p>
       </div>
 
