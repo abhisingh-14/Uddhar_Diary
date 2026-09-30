@@ -73,7 +73,7 @@ export default function BillSplitWizard() {
   }
 
   return (
-    <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
+    <div className="flex flex-1 items-center justify-center p-5 md:p-8">
       {step === 'upload' && (
         <div className="w-full max-w-[760px]">
           <div className="mb-8">

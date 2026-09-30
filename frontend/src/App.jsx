@@ -17,11 +17,11 @@ export default function App() {
   const isAuthPage = pathname === '/login' || pathname === '/signup'
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="flex min-h-screen flex-col md:flex-row">
+    <main className="h-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-full flex-col md:flex-row">
         {!isAuthPage && <Navbar />}
 
-        <section className="flex min-w-0 flex-1 flex-col">
+        <section className="flex min-w-0 flex-1 flex-col overflow-y-auto">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
