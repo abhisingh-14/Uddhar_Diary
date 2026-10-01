@@ -40,15 +40,15 @@ export default function CategoryBreakdown({ granularity }) {
   }, [granularity]);
 
   if (loading) {
-    return <div className="text-gray-500">Loading breakdown...</div>;
+    return <div className="text-muted-foreground">Loading breakdown...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   if (data.length === 0) {
-    return <div className="text-gray-500 italic">No expenses recorded for this period</div>;
+    return <div className="text-muted-foreground italic">No expenses recorded for this period</div>;
   }
 
   return (
@@ -70,14 +70,27 @@ export default function CategoryBreakdown({ granularity }) {
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value) => formatPaise(value)}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <p className="mb-1 text-sm font-medium text-foreground">{data.categoryName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Spent: <span className="font-semibold text-foreground">{formatPaise(data.totalPaise)}</span>
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
           </PieChart>
         </ResponsiveContainer>
       </div>
       <ul className="mt-4 w-full space-y-1">
         {data.map((entry, index) => (
-          <li key={entry.categoryId || index} className="text-gray-700">
+          <li key={entry.categoryId || index} className="text-foreground">
             {entry.categoryName} &rarr; {formatPaise(entry.totalPaise)}
           </li>
         ))}

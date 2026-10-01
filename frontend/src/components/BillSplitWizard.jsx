@@ -22,18 +22,17 @@ export default function BillSplitWizard() {
   const [extractedData, setExtractedData] = useState(null)
   const [reviewedBill, setReviewedBill] = useState(null)
   const [saveResult, setSaveResult] = useState(null)
-  const [entryMode, setEntryMode] = useState('amount')
-
-  useEffect(() => {
+  const [entryMode, setEntryMode] = useState(() => {
     try {
       const saved = localStorage.getItem('billEntryMode')
       if (saved === 'amount' || saved === 'photo') {
-        setEntryMode(saved)
+        return saved
       }
     } catch (err) {
       // Fall back to default 'amount' if localStorage fails
     }
-  }, [])
+    return 'amount'
+  })
 
   function handleEntryModeChange(mode) {
     setEntryMode(mode)

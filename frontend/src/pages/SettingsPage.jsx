@@ -8,12 +8,9 @@ const tabs = [
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
+    <div className="flex flex-1 items-start justify-center px-5 py-6 md:px-12 md:py-10 lg:py-16">
       <div className="w-full max-w-[760px] animate-in fade-in duration-500">
         <div className="max-w-[500px]">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            Settings
-          </p>
           <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
             Settings
           </h2>

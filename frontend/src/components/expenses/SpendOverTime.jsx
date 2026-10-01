@@ -47,15 +47,15 @@ export default function SpendOverTime({ granularity }) {
   };
 
   if (loading) {
-    return <div className="text-gray-500">Loading spending data...</div>;
+    return <div className="text-muted-foreground">Loading spending data...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   if (data.length === 0) {
-    return <div className="text-gray-500 italic">No expenses recorded for this range.</div>;
+    return <div className="text-muted-foreground italic">No expenses recorded for this range.</div>;
   }
 
   return (
@@ -72,8 +72,19 @@ export default function SpendOverTime({ granularity }) {
               tickFormatter={formatPaise}
             />
             <Tooltip 
-              labelFormatter={formatPeriodLabel}
-              formatter={(value) => formatPaise(value)}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <p className="mb-1 text-sm font-medium text-foreground">{formatPeriodLabel(label)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Spent: <span className="font-semibold text-foreground">{formatPaise(payload[0].value)}</span>
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Line 
               type="monotone" 
