@@ -19,9 +19,11 @@
  *   10. Edit validation: disallowed fields, invalid values, mixed valid/invalid.
  *   11. Edit/delete routing: invalid UUID, random UUID, missing auth.
  *   12. Guard: payments recorded blocks edit/delete.
- *   13. Guard: bill-based debt blocks edit/delete.
- *   14. Delete success: remove debt, verify gone, balances updated.
+ *   13. Delete success: remove debt, verify gone, balances updated.
+ *   14. Guard: bill-based debt blocks edit/delete (after expenses check).
  *   15. Final leak check: count debts matches expected.
+ * F. Expenses isolation
+ *   16. Verify manual debts don't affect expense endpoints (by-category, over-time for month/week).
  */
 
 require('dotenv/config');
@@ -121,6 +123,7 @@ function getUtc3DaysFuture() {
 async function runChecks(token) {
   let personId = null;
   let throwawayBillId = null;
+  let expensesBefore = {};
 
   try {
     // Setup
@@ -130,6 +133,19 @@ async function runChecks(token) {
     });
     if (!personRes.ok) throw new Error('Failed to create test person: ' + personRes.text);
     personId = personRes.json.id;
+
+    // Capture expenses baseline before any debts are created
+    const expBefore1 = await api('GET', '/api/expenses/by-category?granularity=month', { token });
+    expensesBefore.byCategoryMonth = JSON.stringify(expBefore1.json);
+
+    const expBefore2 = await api('GET', '/api/expenses/over-time?granularity=month', { token });
+    expensesBefore.overTimeMonth = JSON.stringify(expBefore2.json);
+
+    const expBefore3 = await api('GET', '/api/expenses/by-category?granularity=week', { token });
+    expensesBefore.byCategoryWeek = JSON.stringify(expBefore3.json);
+
+    const expBefore4 = await api('GET', '/api/expenses/over-time?granularity=week', { token });
+    expensesBefore.overTimeWeek = JSON.stringify(expBefore4.json);
 
     // A. Create + balance
     const a1 = await api('POST', '/api/debts/manual', {
@@ -258,42 +274,6 @@ async function runChecks(token) {
       debtXId = eX.json?.id;
       check('E1. Setup: create debt X', eX.status === 201, eX.status === 201 ? '' : `status=${eX.status}`);
 
-      // Create throwaway bill-based debt
-      const ts = Date.now();
-      const { data: billData, error: billError } = await supabaseAdmin
-        .from('bills')
-        .insert({
-          merchant_name: `verify-manual-${ts}`,
-          total_amount: 1,
-          user_share_paise: 100,
-          category_id: null,
-          bill_date: getUtcToday(),
-          user_id: userId
-        })
-        .select('id')
-        .single();
-      if (billError) {
-        check('E1. Setup: create bill', false, billError.message);
-      } else {
-        throwawayBillId = billData.id;
-        const { data: billDebtData, error: billDebtError } = await supabaseAdmin
-          .from('debts')
-          .insert({
-            person_id: personId,
-            bill_id: throwawayBillId,
-            kind: 'bill',
-            direction: 'they_owe_you',
-            amount_paise: 100
-          })
-          .select('id')
-          .single();
-        if (billDebtError) {
-          check('E1. Setup: create bill debt', false, billDebtError.message);
-        } else {
-          billDebtId = billDebtData.id;
-        }
-      }
-
       // E1 Edit success
       const e1a = await api('PATCH', `/api/debts/${debtXId}`, {
         token,
@@ -403,26 +383,7 @@ async function runChecks(token) {
         && checkX4.incurred_on === '2025-02-01';
       check('E4. Debt unchanged after blocks', e4dOk, e4dOk ? '' : `amount=${checkX4?.amount_paise} note=${checkX4?.note} amount_paid=${checkX4?.amount_paid_paise} direction=${checkX4?.direction} incurred_on=${checkX4?.incurred_on}`);
 
-      // E5 Guard: bill-based debt
-      const e5a = await api('PATCH', `/api/debts/${billDebtId}`, { token, body: { note: 'nope' } });
-      check('E5. PATCH bill debt blocked', e5a.status === 409, `got ${e5a.status} text=${e5a.text.slice(0, 100)}`);
-
-      const e5b = await api('DELETE', `/api/debts/${billDebtId}`, { token });
-      check('E5. DELETE bill debt blocked', e5b.status === 409, `got ${e5b.status} text=${e5b.text.slice(0, 100)}`);
-
-      const { data: checkBillDebt } = await supabaseAdmin
-        .from('debts')
-        .select('amount_paise, note, kind, amount_paid_paise')
-        .eq('id', billDebtId)
-        .single();
-      const e5Ok = checkBillDebt
-        && checkBillDebt.amount_paise === 100
-        && checkBillDebt.note === null
-        && checkBillDebt.kind === 'bill'
-        && checkBillDebt.amount_paid_paise === 0;
-      check('E5. Bill debt unchanged', e5Ok, e5Ok ? '' : `amount=${checkBillDebt?.amount_paise} note=${checkBillDebt?.note} kind=${checkBillDebt?.kind} amount_paid=${checkBillDebt?.amount_paid_paise}`);
-
-      // E6 Delete success
+      // E6 Delete success - part 1: create Y and check it appears in balances
       const beforeBalances = await api('GET', '/api/debts/balances', { token });
       const before = beforeBalances.json?.balances?.find(b => b.personId === personId);
 
@@ -438,6 +399,24 @@ async function runChecks(token) {
       const includeOk = afterC && before && afterC.theyOweYouPaise === before.theyOweYouPaise + 7000;
       check('E6. Balances include Y while it exists', includeOk, includeOk ? '' : `before=${before?.theyOweYouPaise} after=${afterC?.theyOweYouPaise}`);
 
+      // F. Expenses isolation (while Y still exists)
+      const expAfter1 = await api('GET', '/api/expenses/by-category?granularity=month', { token });
+      const f1Ok = JSON.stringify(expAfter1.json) === expensesBefore.byCategoryMonth;
+      check('F1. Expenses by-category (month) unchanged', f1Ok, f1Ok ? '' : `before=${expensesBefore.byCategoryMonth.slice(0, 100)} after=${JSON.stringify(expAfter1.json).slice(0, 100)}`);
+
+      const expAfter2 = await api('GET', '/api/expenses/over-time?granularity=month', { token });
+      const f2Ok = JSON.stringify(expAfter2.json) === expensesBefore.overTimeMonth;
+      check('F2. Expenses over-time (month) unchanged', f2Ok, f2Ok ? '' : `before=${expensesBefore.overTimeMonth.slice(0, 100)} after=${JSON.stringify(expAfter2.json).slice(0, 100)}`);
+
+      const expAfter3 = await api('GET', '/api/expenses/by-category?granularity=week', { token });
+      const f3Ok = JSON.stringify(expAfter3.json) === expensesBefore.byCategoryWeek;
+      check('F3. Expenses by-category (week) unchanged', f3Ok, f3Ok ? '' : `before=${expensesBefore.byCategoryWeek.slice(0, 100)} after=${JSON.stringify(expAfter3.json).slice(0, 100)}`);
+
+      const expAfter4 = await api('GET', '/api/expenses/over-time?granularity=week', { token });
+      const f4Ok = JSON.stringify(expAfter4.json) === expensesBefore.overTimeWeek;
+      check('F4. Expenses over-time (week) unchanged', f4Ok, f4Ok ? '' : `before=${expensesBefore.overTimeWeek.slice(0, 100)} after=${JSON.stringify(expAfter4.json).slice(0, 100)}`);
+
+      // E6 Delete success - part 2: delete Y and remaining checks
       const e6a = await api('DELETE', `/api/debts/${debtYId}`, { token });
       const e6aOk = e6a.status === 200 && e6a.json?.id === debtYId;
       check('E6. DELETE Y success', e6aOk, `status=${e6a.status} text=${e6a.text.slice(0, 100)}`);
@@ -459,6 +438,60 @@ async function runChecks(token) {
         && afterD.youOweThemPaise === before.youOweThemPaise
         && afterD.netBalancePaise === before.netBalancePaise;
       check('E6. Balances back to normal after delete', backOk, backOk ? '' : `before=${JSON.stringify(before)} after=${JSON.stringify(afterD)}`);
+
+      // E5 Guard: bill-based debt - NOW create the throwaway bill
+      const ts = Date.now();
+      const { data: billData, error: billError } = await supabaseAdmin
+        .from('bills')
+        .insert({
+          merchant_name: `verify-manual-${ts}`,
+          total_amount: 1,
+          user_share_paise: 100,
+          category_id: null,
+          bill_date: getUtcToday(),
+          user_id: userId
+        })
+        .select('id')
+        .single();
+      if (billError) {
+        check('E5. Setup: create bill', false, billError.message);
+      } else {
+        throwawayBillId = billData.id;
+        const { data: billDebtData, error: billDebtError } = await supabaseAdmin
+          .from('debts')
+          .insert({
+            person_id: personId,
+            bill_id: throwawayBillId,
+            kind: 'bill',
+            direction: 'they_owe_you',
+            amount_paise: 100
+          })
+          .select('id')
+          .single();
+        if (billDebtError) {
+          check('E5. Setup: create bill debt', false, billDebtError.message);
+        } else {
+          billDebtId = billDebtData.id;
+
+          const e5a = await api('PATCH', `/api/debts/${billDebtId}`, { token, body: { note: 'nope' } });
+          check('E5. PATCH bill debt blocked', e5a.status === 409, `got ${e5a.status} text=${e5a.text.slice(0, 100)}`);
+
+          const e5b = await api('DELETE', `/api/debts/${billDebtId}`, { token });
+          check('E5. DELETE bill debt blocked', e5b.status === 409, `got ${e5b.status} text=${e5b.text.slice(0, 100)}`);
+
+          const { data: checkBillDebt } = await supabaseAdmin
+            .from('debts')
+            .select('amount_paise, note, kind, amount_paid_paise')
+            .eq('id', billDebtId)
+            .single();
+          const e5Ok = checkBillDebt
+            && checkBillDebt.amount_paise === 100
+            && checkBillDebt.note === null
+            && checkBillDebt.kind === 'bill'
+            && checkBillDebt.amount_paid_paise === 0;
+          check('E5. Bill debt unchanged', e5Ok, e5Ok ? '' : `amount=${checkBillDebt?.amount_paise} note=${checkBillDebt?.note} kind=${checkBillDebt?.kind} amount_paid=${checkBillDebt?.amount_paid_paise}`);
+        }
+      }
 
       // E7 Final leak check
       const { count: finalCount, error: finalError } = await supabaseAdmin

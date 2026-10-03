@@ -112,3 +112,10 @@ export async function changePassword({ currentPassword, newPassword }) {
     body: { currentPassword, newPassword },
   });
 }
+
+export async function addManualDebt({ personId, direction, amountPaise, kind, incurredOn, note }) {
+  return apiClient('/api/debts/manual', {
+    method: 'POST',
+    body: { personId, direction, amountPaise, kind, incurredOn, note },
+  });
+}

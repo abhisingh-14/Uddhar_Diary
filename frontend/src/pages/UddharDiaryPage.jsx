@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, Plus } from 'lucide-react'
 import { getBalances } from '../api/client.js'
 import DiaryTabs from '../components/diary/DiaryTabs.jsx'
+import AddDueModal from '../components/diary/AddDueModal.jsx'
 
 export default function UddharDiaryPage() {
   const [status, setStatus] = useState('loading')
   const [balances, setBalances] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const loadBalances = useCallback(async () => {
     setStatus('loading')
@@ -29,6 +31,10 @@ export default function UddharDiaryPage() {
   const owedToYou = balances.filter((entry) => entry.netBalancePaise > 0)
   const youOwe = balances.filter((entry) => entry.netBalancePaise < 0)
 
+  const handleDebtAdded = () => {
+    loadBalances()
+  }
+
   return (
     <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
       <div className="w-full max-w-[760px] animate-in fade-in duration-500">
@@ -36,9 +42,19 @@ export default function UddharDiaryPage() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             Your ledger
           </p>
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
-            Who owes what
-          </h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
+              Who owes what
+            </h2>
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            >
+              <Plus className="size-4" strokeWidth={1.8} />
+              Add loan / due
+            </button>
+          </div>
           <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">
             Track what people owe you and what you still need to settle up.
           </p>
@@ -71,6 +87,12 @@ export default function UddharDiaryPage() {
           {status === 'ready' && <DiaryTabs owedToYou={owedToYou} youOwe={youOwe} />}
         </div>
       </div>
+
+      <AddDueModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdded={handleDebtAdded}
+      />
     </div>
   )
 }
