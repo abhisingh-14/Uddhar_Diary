@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlertCircle, Plus, UserPlus, X } from 'lucide-react'
 import { getPeople, createPerson, addManualDebt } from '../../api/client.js'
 import { rupeesToPaise } from '../../lib/money.js'
@@ -34,19 +34,6 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
     return `${year}-${month}-${day}`
   }
 
-  const resetForm = useCallback(() => {
-    setSelectedPersonId(presetPersonId || '')
-    setShowAddPerson(false)
-    setNewPersonName('')
-    setAddPersonError('')
-    setDirection('')
-    setKind('loan')
-    setDate('')
-    setAmount('')
-    setNote('')
-    setSubmitError('')
-  }, [presetPersonId])
-
   useEffect(() => {
     if (open) {
       async function loadPeople() {
@@ -65,9 +52,29 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
         }
       }
       loadPeople()
-      resetForm()
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedPersonId(presetPersonId || '')
+       
+      setShowAddPerson(false)
+       
+      setNewPersonName('')
+       
+      setAddPersonError('')
+       
+      setDirection('')
+       
+      setKind('loan')
+       
+      setDate('')
+       
+      setAmount('')
+       
+      setNote('')
+       
+      setSubmitError('')
     }
-  }, [open, presetPersonId, resetForm])
+     
+  }, [open, presetPersonId])
 
   useEffect(() => {
     if (open && amountInputRef.current) {

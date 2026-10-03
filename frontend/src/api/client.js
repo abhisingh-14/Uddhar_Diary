@@ -119,3 +119,16 @@ export async function addManualDebt({ personId, direction, amountPaise, kind, in
     body: { personId, direction, amountPaise, kind, incurredOn, note },
   });
 }
+
+export async function updateManualDebt(debtId, fields) {
+  return apiClient(`/api/debts/${encodeURIComponent(debtId)}`, {
+    method: 'PATCH',
+    body: fields,
+  });
+}
+
+export async function deleteManualDebt(debtId) {
+  return apiClient(`/api/debts/${encodeURIComponent(debtId)}`, {
+    method: 'DELETE',
+  });
+}
