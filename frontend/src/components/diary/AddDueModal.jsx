@@ -1,86 +1,92 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertCircle, Plus, UserPlus, X } from 'lucide-react'
-import { getPeople, createPerson, addManualDebt } from '../../api/client.js'
+import { getPeople, createPerson, addManualDebt, updateManualDebt } from '../../api/client.js'
 import { rupeesToPaise } from '../../lib/money.js'
 
-export default function AddDueModal({ open, onClose, onAdded, presetPersonId = null }) {
+function paiseToRupeeString(paise) {
+  const whole = Math.floor(paise / 100)
+  const frac = paise % 100
+  return frac === 0 ? String(whole) : `${whole}.${String(frac).padStart(2, '0')}`
+}
+
+function getLocalToday() {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict }) {
   const [people, setPeople] = useState([])
-  const [isLoadingPeople, setIsLoadingPeople] = useState(false)
+  const [isLoadingPeople, setIsLoadingPeople] = useState(true)
   const [peopleError, setPeopleError] = useState('')
 
-  const [selectedPersonId, setSelectedPersonId] = useState('')
+  const [selectedPersonId, setSelectedPersonId] = useState(() => editingDebt?.personId ?? presetPersonId ?? '')
   const [showAddPerson, setShowAddPerson] = useState(false)
   const [newPersonName, setNewPersonName] = useState('')
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const [addPersonError, setAddPersonError] = useState('')
 
-  const [direction, setDirection] = useState('')
-  const [kind, setKind] = useState('loan')
-  const [date, setDate] = useState('')
-  const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
+  const [direction, setDirection] = useState(() => editingDebt?.direction ?? '')
+  const [kind, setKind] = useState(() => editingDebt?.kind ?? 'loan')
+  const [date, setDate] = useState(() => editingDebt?.incurredOn?.slice(0, 10) ?? '')
+  const [amount, setAmount] = useState(() => editingDebt ? paiseToRupeeString(editingDebt.amountPaise) : '')
+  const [note, setNote] = useState(() => editingDebt?.note ?? '')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
+  const isEditMode = editingDebt !== null
+
   const amountInputRef = useRef(null)
   const modalRef = useRef(null)
 
-  const getLocalToday = () => {
-    const d = new Date()
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
   useEffect(() => {
-    if (open) {
-      async function loadPeople() {
-        setIsLoadingPeople(true)
-        setPeopleError('')
-        try {
-          const data = await getPeople()
+    let cancelled = false
+
+    async function loadPeople() {
+      try {
+        const data = await getPeople()
+        if (!cancelled) {
           setPeople(data)
-          if (presetPersonId) {
-            setSelectedPersonId(presetPersonId)
-          }
-        } catch (err) {
+        }
+      } catch (err) {
+        if (!cancelled) {
           setPeopleError(err.message || 'Failed to load people')
-        } finally {
+        }
+      } finally {
+        if (!cancelled) {
           setIsLoadingPeople(false)
         }
       }
-      loadPeople()
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedPersonId(presetPersonId || '')
-       
-      setShowAddPerson(false)
-       
-      setNewPersonName('')
-       
-      setAddPersonError('')
-       
-      setDirection('')
-       
-      setKind('loan')
-       
-      setDate('')
-       
-      setAmount('')
-       
-      setNote('')
-       
-      setSubmitError('')
     }
-     
-  }, [open, presetPersonId])
+
+    loadPeople()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
-    if (open && amountInputRef.current) {
+    if (amountInputRef.current) {
       amountInputRef.current.focus()
     }
-  }, [open])
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !isSubmitting) {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isSubmitting, onClose])
 
   async function handleAddPerson(event) {
     event.preventDefault()
@@ -113,7 +119,7 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
     return ''
   }
 
-  const canSubmit = selectedPersonId && direction && !getAmountError() && !isSubmitting
+  const canSubmit = selectedPersonId && (isEditMode || direction) && !getAmountError() && !isSubmitting
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -124,23 +130,54 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
 
     try {
       const paise = rupeesToPaise(amount)
-      const body = {
-        personId: selectedPersonId,
-        direction,
-        amountPaise: paise,
-        kind,
-        incurredOn: kind === 'old_due' ? date : getLocalToday(),
-      }
 
-      if (note.trim()) {
-        body.note = note.trim()
-      }
+      if (isEditMode) {
+        const fields = {}
+        if (paise !== editingDebt.amountPaise) {
+          fields.amountPaise = paise
+        }
+        if (direction !== editingDebt.direction) {
+          fields.direction = direction
+        }
+        const trimmedNote = note.trim()
+        if (trimmedNote !== (editingDebt.note || '')) {
+          fields.note = trimmedNote || null
+        }
+        const dateValue = kind === 'old_due' ? date : getLocalToday()
+        if (dateValue !== editingDebt.incurredOn?.slice(0, 10)) {
+          fields.incurredOn = dateValue
+        }
 
-      const createdDebt = await addManualDebt(body)
-      onAdded(createdDebt)
-      onClose()
+        if (Object.keys(fields).length === 0) {
+          onClose()
+          return
+        }
+
+        const updatedDebt = await updateManualDebt(editingDebt.id, fields)
+        onAdded(updatedDebt)
+        onClose()
+      } else {
+        const body = {
+          personId: selectedPersonId,
+          direction,
+          amountPaise: paise,
+          kind,
+          incurredOn: kind === 'old_due' ? date : getLocalToday(),
+        }
+
+        if (note.trim()) {
+          body.note = note.trim()
+        }
+
+        const createdDebt = await addManualDebt(body)
+        onAdded(createdDebt)
+        onClose()
+      }
     } catch (err) {
-      setSubmitError(err.message || 'Failed to add debt')
+      setSubmitError(err.message || isEditMode ? 'Failed to update debt' : 'Failed to add debt')
+      if (err.status === 409 && onConflict) {
+        onConflict()
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -152,21 +189,12 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
     }
   }
 
-  function handleKeyDown(event) {
-    if (event.key === 'Escape' && !isSubmitting) {
-      onClose()
-    }
-  }
-
-  if (!open) return null
-
   const amountError = getAmountError()
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleBackdropClick}
-      onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
     >
@@ -175,7 +203,7 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
         className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Add loan / due</h2>
+          <h2 className="text-lg font-semibold text-foreground">{isEditMode ? 'Edit entry' : 'Add loan / due'}</h2>
           <button
             type="button"
             onClick={() => !isSubmitting && onClose()}
@@ -246,7 +274,7 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
                       setSelectedPersonId(e.target.value)
                     }
                   }}
-                  disabled={presetPersonId !== null}
+                  disabled={presetPersonId !== null || isEditMode}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
                 >
                   <option value="">Select a person</option>
@@ -299,41 +327,43 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
             </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-xs font-medium text-foreground">Type</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setKind('loan')
-                  setDate('')
-                }}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                  kind === 'loan'
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-primary/40'
-                }`}
-              >
-                New loan
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setKind('old_due')
-                  setDate(getLocalToday())
-                }}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                  kind === 'old_due'
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-primary/40'
-                }`}
-              >
-                Old due
-              </button>
+          {!isEditMode && (
+            <div>
+              <label className="mb-2 block text-xs font-medium text-foreground">Type</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setKind('loan')
+                    setDate('')
+                  }}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    kind === 'loan'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-background text-foreground hover:border-primary/40'
+                  }`}
+                >
+                  New loan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setKind('old_due')
+                    setDate(getLocalToday())
+                  }}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    kind === 'old_due'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-background text-foreground hover:border-primary/40'
+                  }`}
+                >
+                  Old due
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {kind === 'old_due' && (
+          {kind === 'old_due' || isEditMode ? (
             <div>
               <label className="mb-2 block text-xs font-medium text-foreground">Date</label>
               <input
@@ -344,7 +374,7 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-          )}
+          ) : null}
 
           <div>
             <label className="mb-2 block text-xs font-medium text-foreground">Amount (₹)</label>
@@ -398,4 +428,9 @@ export default function AddDueModal({ open, onClose, onAdded, presetPersonId = n
       </div>
     </div>
   )
+}
+
+export default function AddDueModal({ open, onClose, onAdded, presetPersonId = null, editingDebt = null, onConflict = null }) {
+  if (!open) return null
+  return <AddDueForm key={editingDebt?.id ?? 'new'} onClose={onClose} onAdded={onAdded} presetPersonId={presetPersonId} editingDebt={editingDebt} onConflict={onConflict} />
 }

@@ -3,7 +3,7 @@ import { formatPaise } from '../../lib/money.js'
 import { useState } from 'react'
 
 function formatDebtDate(debt) {
-  const raw = debt.billDate ?? debt.createdAt
+  const raw = debt.incurredOn ?? debt.billDate ?? debt.createdAt
   if (!raw) return null
 
   return new Intl.DateTimeFormat('en-IN', {
@@ -13,16 +13,20 @@ function formatDebtDate(debt) {
   }).format(new Date(raw))
 }
 
-export default function DebtHistoryItem({ debt, onSettle }) {
+export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
   const isSettled = debt.remainingPaise <= 0 || debt.settledAt != null
   const directionLabel =
     debt.direction === 'they_owe_you' ? 'They owe you' : 'You owe them'
   const formattedDate = formatDebtDate(debt)
+  const isManualDebt = debt.kind !== 'bill'
+  const canEditDelete = isManualDebt && debt.amountPaidPaise === 0
 
   const [showSettleForm, setShowSettleForm] = useState(false)
   const [amountPaise, setAmountPaise] = useState(debt.remainingPaise)
   const [isSettling, setIsSettling] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleSettleClick = () => {
     setShowSettleForm(true)
@@ -74,6 +78,26 @@ export default function DebtHistoryItem({ debt, onSettle }) {
     }
   }
 
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true)
+    try {
+      await onDelete(debt)
+    } catch (err) {
+      setError(err.message || 'Failed to delete debt')
+      setShowDeleteConfirm(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false)
+  }
+
   return (
     <div
       className={`rounded-xl border px-4 py-3.5 ${
@@ -91,8 +115,15 @@ export default function DebtHistoryItem({ debt, onSettle }) {
           >
             {directionLabel}
           </p>
-          {debt.merchantName && (
+          {debt.merchantName ? (
             <p className="mt-0.5 truncate text-xs text-muted-foreground">{debt.merchantName}</p>
+          ) : isManualDebt && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {debt.kind === 'old_due' ? 'Old due' : 'Loan'}
+            </p>
+          )}
+          {debt.note && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{debt.note}</p>
           )}
           {formattedDate && (
             <p className="mt-1 text-[11px] text-muted-foreground">{formattedDate}</p>
@@ -140,6 +171,47 @@ export default function DebtHistoryItem({ debt, onSettle }) {
               </button>
             )}
           </>
+        )}
+        {canEditDelete && !showDeleteConfirm && (
+          <>
+            <button
+              type="button"
+              onClick={() => onEdit(debt)}
+              disabled={isSettling || isDeleting}
+              className="rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              disabled={isSettling || isDeleting}
+              className="rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+            >
+              Delete
+            </button>
+          </>
+        )}
+        {showDeleteConfirm && (
+          <div className="ml-auto flex items-center gap-2 text-[11px]">
+            <span className="text-muted-foreground">Delete?</span>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="rounded-lg bg-destructive px-2 py-0.5 font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-40"
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+              className="rounded-lg border border-border bg-background px-2 py-0.5 font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+            >
+              No
+            </button>
+          </div>
         )}
       </div>
 

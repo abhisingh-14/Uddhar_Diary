@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, Loader2, UserX } from 'lucide-react'
-import { apiClient, getPersonDebts, settleDebt } from '../api/client.js'
+import { AlertCircle, ArrowLeft, Loader2, Plus, UserX } from 'lucide-react'
+import { apiClient, getPersonDebts, settleDebt, deleteManualDebt } from '../api/client.js'
 import DebtHistoryItem from '../components/diary/DebtHistoryItem.jsx'
+import AddDueModal from '../components/diary/AddDueModal.jsx'
 import { formatPaise } from '../lib/money.js'
 
 const UUID_PATTERN =
@@ -33,6 +34,8 @@ export default function PersonDetailPage() {
   const [personName, setPersonName] = useState('')
   const [debts, setDebts] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingDebt, setEditingDebt] = useState(null)
 
   const loadDebtHistory = useCallback(async () => {
     if (!personId || !UUID_PATTERN.test(personId)) {
@@ -74,7 +77,7 @@ export default function PersonDetailPage() {
   const handleSettleDebt = async (debtId, amountPaise) => {
     try {
       const updatedDebt = await settleDebt(debtId, amountPaise)
-      
+
       setDebts((prevDebts) =>
         prevDebts.map((debt) =>
           debt.id === debtId ? updatedDebt : debt
@@ -83,6 +86,42 @@ export default function PersonDetailPage() {
     } catch (err) {
       throw err
     }
+  }
+
+  const handleDeleteDebt = async (debt) => {
+    try {
+      await deleteManualDebt(debt.id)
+      await loadDebtHistory()
+    } catch (err) {
+      if (err.status === 409) {
+        await loadDebtHistory()
+      }
+      throw err
+    }
+  }
+
+  const handleEditDebt = (debt) => {
+    setEditingDebt(debt)
+    setShowAddModal(true)
+  }
+
+  const handleModalClose = () => {
+    setShowAddModal(false)
+    setEditingDebt(null)
+  }
+
+  const handleDebtAdded = (updatedDebt) => {
+    if (editingDebt) {
+      setDebts((prevDebts) =>
+        prevDebts.map((debt) =>
+          debt.id === updatedDebt.id ? updatedDebt : debt
+        )
+      )
+    } else {
+      loadDebtHistory()
+    }
+    setShowAddModal(false)
+    setEditingDebt(null)
   }
 
   return (
@@ -138,9 +177,19 @@ export default function PersonDetailPage() {
         {status === 'ready' && (
           <>
             <div className="max-w-[500px]">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                Debt history
-              </p>
+              <div className="mb-4 flex items-center gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                  Debt history
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Plus className="size-3.5" />
+                  Add loan / due
+                </button>
+              </div>
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
                 {personName}
               </h2>
@@ -168,7 +217,13 @@ export default function PersonDetailPage() {
               ) : (
                 <div className="space-y-2">
                   {debts.map((debt) => (
-                    <DebtHistoryItem key={debt.id} debt={debt} onSettle={handleSettleDebt} />
+                    <DebtHistoryItem
+                      key={debt.id}
+                      debt={debt}
+                      onSettle={handleSettleDebt}
+                      onEdit={handleEditDebt}
+                      onDelete={handleDeleteDebt}
+                    />
                   ))}
                 </div>
               )}
@@ -176,6 +231,15 @@ export default function PersonDetailPage() {
           </>
         )}
       </div>
+
+      <AddDueModal
+        open={showAddModal}
+        onClose={handleModalClose}
+        onAdded={handleDebtAdded}
+        presetPersonId={personId}
+        editingDebt={editingDebt}
+        onConflict={loadDebtHistory}
+      />
     </div>
   )
 }
