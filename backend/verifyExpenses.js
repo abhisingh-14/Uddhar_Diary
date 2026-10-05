@@ -125,10 +125,67 @@ async function verify() {
       }
     }
 
+    // 4. Date parameter matching
+    console.log('\n--- 4. Date parameter matching ---');
+    let pass4 = false;
+    
+    // Test invalid date
+    const resInvalidDateReq = await fetch(`${BASE_URL}/api/expenses/by-category?userId=${CURRENT_USER_ID}&granularity=month&date=invalid-date`);
+    const statusInvalidDate = resInvalidDateReq.status;
+    
+    // Now fetch over-time for last 12 months
+    const resOverTimeCheck = await fetch(`${BASE_URL}/api/expenses/over-time?userId=${CURRENT_USER_ID}&granularity=month`);
+    const dataOverTimeCheck = await resOverTimeCheck.json();
+    
+    let bucketToTest = dataOverTimeCheck.find(b => b.totalPaise > 0);
+    if (!bucketToTest && dataOverTimeCheck.length > 0) bucketToTest = dataOverTimeCheck[0];
+    
+    let matchingTotals = true;
+    
+    if (bucketToTest) {
+      const { periodStart, totalPaise } = bucketToTest;
+      const resByCatDate = await fetch(`${BASE_URL}/api/expenses/by-category?userId=${CURRENT_USER_ID}&granularity=month&date=${periodStart}`);
+      const dataByCatDate = await resByCatDate.json();
+      
+      const sumCat = dataByCatDate.reduce((acc, c) => acc + c.totalPaise, 0);
+      
+      if (sumCat !== totalPaise) {
+        matchingTotals = false;
+        console.log(`FAIL: Month bucket ${periodStart} over-time total (${totalPaise}) !== by-category sum (${sumCat})`);
+      }
+      
+      // check for week
+      const resOverTimeWeek = await fetch(`${BASE_URL}/api/expenses/over-time?userId=${CURRENT_USER_ID}&granularity=week`);
+      const dataOverTimeWeek = await resOverTimeWeek.json();
+      let weekBucket = dataOverTimeWeek.find(b => b.totalPaise > 0) || dataOverTimeWeek[0];
+      
+      if (weekBucket) {
+        const resByCatWeek = await fetch(`${BASE_URL}/api/expenses/by-category?userId=${CURRENT_USER_ID}&granularity=week&date=${weekBucket.periodStart}`);
+        const dataByCatWeek = await resByCatWeek.json();
+        const sumCatWeek = dataByCatWeek.reduce((acc, c) => acc + c.totalPaise, 0);
+        
+        if (sumCatWeek !== weekBucket.totalPaise) {
+          matchingTotals = false;
+          console.log(`FAIL: Week bucket ${weekBucket.periodStart} over-time total (${weekBucket.totalPaise}) !== by-category sum (${sumCatWeek})`);
+        }
+      }
+    }
+    
+    if (statusInvalidDate >= 400 && statusInvalidDate < 500 && matchingTotals) {
+      console.log('PASS: Invalid date returned 4xx, and past buckets match between over-time and by-category.');
+      pass4 = true;
+    } else {
+      console.log('FAIL: Date parameter matching check failed.');
+      if (statusInvalidDate < 400 || statusInvalidDate >= 500) {
+        console.log('FAIL: Expected 4xx for invalid date, got:', statusInvalidDate);
+      }
+    }
+
     console.log('\n--- FINAL SUMMARY ---');
     console.log(`Check 1 (Empty-state): ${pass1 ? 'PASS' : 'FAIL'}`);
     console.log(`Check 2 (Error-state): ${pass2 ? 'PASS' : 'FAIL'}`);
     console.log(`Check 3 (Numbers sanity): ${pass3 ? 'PASS' : 'FAIL'}`);
+    console.log(`Check 4 (Date matching): ${pass4 ? 'PASS' : 'FAIL'}`);
     
     if (numCheckData) {
       console.log('\nNumbers for Check 3:');

@@ -5,7 +5,7 @@ import { formatPaise } from '../../lib/money';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57'];
 
-export default function CategoryBreakdown({ granularity }) {
+export default function CategoryBreakdown({ granularity, date }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,7 +17,7 @@ export default function CategoryBreakdown({ granularity }) {
       try {
         setLoading(true);
         setError(null);
-        const result = await getExpensesByCategory(granularity);
+        const result = await getExpensesByCategory(granularity, date);
         if (isMounted) {
           setData(result);
         }
@@ -37,7 +37,7 @@ export default function CategoryBreakdown({ granularity }) {
     return () => {
       isMounted = false;
     };
-  }, [granularity]);
+  }, [granularity, date]);
 
   if (loading) {
     return <div className="text-muted-foreground">Loading breakdown...</div>;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 import { getExpensesOverTime } from '../../api/client';
 import { formatPaise } from '../../lib/money';
 
-export default function SpendOverTime({ granularity }) {
+export default function SpendOverTime({ granularity, selectedBucket, setSelectedBucket }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,7 +62,15 @@ export default function SpendOverTime({ granularity }) {
     <div className="w-full">
       <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart 
+            data={data}
+            onClick={(e) => {
+              if (e && e.activeLabel) {
+                setSelectedBucket(e.activeLabel);
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="periodStart" 
@@ -86,6 +94,7 @@ export default function SpendOverTime({ granularity }) {
                 return null;
               }}
             />
+            {selectedBucket && <ReferenceLine x={selectedBucket} stroke="#8884d8" strokeDasharray="3 3" />}
             <Line 
               type="monotone" 
               dataKey="totalPaise" 
