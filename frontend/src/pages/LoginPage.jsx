@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -63,15 +64,34 @@ export default function LoginPage() {
             <label htmlFor="login-password" className="mb-1.5 block text-xs font-medium text-muted-foreground">
               Password
             </label>
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-10 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" strokeWidth={1.8} />
+                ) : (
+                  <Eye className="size-4" strokeWidth={1.8} />
+                )}
+              </button>
+            </div>
+            <div className="mt-1.5 text-right">
+              <Link to="/forgot-password" className="text-xs text-primary hover:text-primary/80">
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           {errorMessage && (

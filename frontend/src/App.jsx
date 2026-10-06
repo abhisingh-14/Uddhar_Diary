@@ -13,10 +13,12 @@ import SecuritySection from './components/settings/SecuritySection.jsx'
 import PeopleContacts from './components/settings/PeopleContacts.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 
 export default function App() {
   const { pathname } = useLocation()
-  const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/reset-password'
 
   return (
     <main className="h-screen bg-background text-foreground overflow-hidden">
@@ -28,6 +30,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/" element={<Navigate to="/split" replace />} />
             <Route
               path="/split"
