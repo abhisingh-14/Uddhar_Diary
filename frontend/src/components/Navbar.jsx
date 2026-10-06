@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import Logo from './Logo.jsx'
 import { useState, useEffect } from 'react'
 
-const navItems = [
-  { label: 'Split Bill', icon: Calculator, path: '/split' },
-  { label: 'Expense Tracker', icon: BarChart3, path: '/expenses' },
-  { label: 'Uddhar Diary', icon: WalletCards, path: '/diary' },
-  { label: 'Settings', icon: Settings, path: '/settings' },
+export const navItems = [
+  { label: 'Split Bill', icon: Calculator, path: '/split', shortLabel: 'Split' },
+  { label: 'Expense Tracker', icon: BarChart3, path: '/expenses', shortLabel: 'Expenses' },
+  { label: 'Uddhar Diary', icon: WalletCards, path: '/diary', shortLabel: 'Diary' },
+  { label: 'Settings', icon: Settings, path: '/settings', shortLabel: 'Settings' },
 ]
 
 export default function Navbar() {

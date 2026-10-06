@@ -1,5 +1,7 @@
 import { Navigate, Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
+import BottomTabBar from './components/BottomTabBar.jsx'
+import MobileHeader from './components/MobileHeader.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import SplitBillPage from './pages/SplitBillPage.jsx'
 import UddharDiaryPage from './pages/UddharDiaryPage.jsx'
@@ -21,7 +23,8 @@ export default function App() {
       <div className="flex h-full flex-col md:flex-row">
         {!isAuthPage && <Navbar />}
 
-        <section className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <section className="flex min-w-0 flex-1 flex-col overflow-y-auto md:pb-0" style={{ paddingBottom: !isAuthPage ? 'calc(64px + env(safe-area-inset-bottom))' : undefined }}>
+          {!isAuthPage && <div className="md:hidden"><MobileHeader /></div>}
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -73,6 +76,8 @@ export default function App() {
             </Route>
           </Routes>
         </section>
+
+        {!isAuthPage && <div className="md:hidden"><BottomTabBar /></div>}
       </div>
     </main>
   )
