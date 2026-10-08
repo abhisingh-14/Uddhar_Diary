@@ -4,12 +4,13 @@ UddharDiary is a comprehensive personal finance and debt tracking application. "
 
 ## Features
 
-- **Authentication & Security:** Secure user sign-up and login powered by Supabase.
-- **Expense Tracking:** Monitor your daily expenses, categorize them, and visualize your spending habits.
+- **Authentication & Security:** Secure user sign-up, login, and password recovery powered by Supabase.
+- **Expense Tracking & Categorization:** Monitor your daily expenses, categorize them, and visualize your spending habits with an enhanced category breakdown feature.
 - **Uddhar (Debt) Diary:** Keep a detailed log of people who owe you money or to whom you owe money. View individual profiles to see transaction history.
+- **Manual Loan Management:** Manually log and manage loans or dues with an easy-to-use interface.
 - **AI-Powered Bill Splitting:** Upload receipt images and let Gemini AI automatically extract items and prices. Split the bill evenly among friends with just a few clicks.
 - **Email Reminders:** Send automated email reminders to friends who owe you money, powered by Resend.
-- **Responsive Dashboard:** A beautiful and modern user interface built with React and Tailwind CSS.
+- **Responsive & Optimized UI:** A beautiful and modern user interface built with React and Tailwind CSS, featuring a collapsible sidebar for desktop and a bottom tab bar for seamless navigation on mobile devices.
 
 ## Tech Stack
 
