@@ -1,15 +1,29 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
+import AuthBrandPanel from '../components/AuthBrandPanel'
+import MobileAuthHeader from '../components/MobileAuthHeader'
 
 export default function SignupPage() {
   const navigate = useNavigate()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Password strength calculation (simplified 3-segment logic based on length)
+  const getPasswordStrength = (pwd) => {
+    if (pwd.length === 0) return { level: 0, label: 'Minimum 8 characters', tag: 'Empty', color: 'text-outline' }
+    if (pwd.length < 6) return { level: 1, label: 'Too short', tag: 'Weak', color: 'text-tertiary' }
+    if (pwd.length < 10) return { level: 2, label: 'Add symbols or numbers', tag: 'Good', color: 'text-secondary' }
+    return { level: 3, label: 'High defense ledger key', tag: 'Strong', color: 'text-primary' }
+  }
+
+  const passwordStrength = getPasswordStrength(password)
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -31,87 +45,200 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center px-5 py-10">
-      <div className="w-full max-w-[420px] animate-in fade-in duration-500">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          Create an account
-        </p>
-        <h1 className="text-3xl font-semibold tracking-[-0.045em]">Sign up</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Start splitting bills and tracking what people owe you.
-        </p>
+    <div className="w-full min-h-screen bg-surface-container-lowest text-on-surface flex flex-col lg:flex-row antialiased selection:bg-primary-container selection:text-surface-container-lowest">
+      {/* Desktop left panel */}
+      <AuthBrandPanel />
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm"
-        >
-          <div>
-            <label htmlFor="signup-email" className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              Email
-            </label>
-            <input
-              id="signup-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+      {/* Right panel: Authentication card */}
+      <div className="w-full lg:w-5/12 flex items-start justify-center p-6 sm:p-12 lg:p-20 bg-surface-container-lowest pt-12">
+        <div className="w-full max-w-md bg-surface-container-low rounded-2xl p-8 sm:p-10 shadow-2xl relative">
+          {/* Mobile header */}
+          <MobileAuthHeader />
+
+          {/* Form heading */}
+          <div className="mb-8 hidden lg:block">
+            <span className="font-label-sm text-label-sm uppercase tracking-widest text-outline block">
+              Start splitting bills
+            </span>
+            <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">
+              Create your account
+            </h2>
           </div>
 
-          <div>
-            <label htmlFor="signup-password" className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              Password
-            </label>
-            <div className="relative">
+          {/* Mobile form heading */}
+          <div className="mb-6 lg:hidden">
+            <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold block mb-1">
+              CREATE AN ACCOUNT
+            </span>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">
+              Sign up for diary
+            </h2>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full name field */}
+            <div className="space-y-1.5">
+              <label htmlFor="signup-fullname" className="block font-label-md text-label-md text-on-surface-variant">
+                Full name
+              </label>
+              <div className="relative rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
+                <input
+                  id="signup-fullname"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  placeholder="Alex Morgan"
+                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                />
+              </div>
+            </div>
+
+            {/* Email field */}
+            <div className="space-y-1.5">
+              <label htmlFor="signup-email" className="block font-label-md text-label-md text-on-surface-variant">
+                Email address
+              </label>
+              <div className="relative rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
+                <input
+                  id="signup-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="alex@example.com"
+                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                />
+              </div>
+            </div>
+
+            {/* Password field */}
+            <div className="space-y-1.5">
+              <label htmlFor="signup-password" className="block font-label-md text-label-md text-on-surface-variant">
+                Password
+              </label>
+              <div className="relative flex items-center rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
+                <input
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Create a secure password"
+                  className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
+
+              {/* 3-segment password strength indicator */}
+              <div className="mt-1 flex flex-col gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5 h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden p-0.5">
+                  <div
+                    className={`h-full rounded-full transition-colors duration-300 ${
+                      passwordStrength.level >= 1
+                        ? passwordStrength.level === 1
+                          ? 'bg-tertiary-container'
+                          : passwordStrength.level === 2
+                          ? 'bg-secondary'
+                          : 'bg-primary'
+                        : 'bg-surface-container-highest'
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-colors duration-300 ${
+                      passwordStrength.level >= 2
+                        ? passwordStrength.level === 2
+                          ? 'bg-secondary'
+                          : 'bg-primary'
+                        : 'bg-surface-container-highest'
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-colors duration-300 ${
+                      passwordStrength.level >= 3 ? 'bg-primary' : 'bg-surface-container-highest'
+                    }`}
+                  />
+                </div>
+                <div className="flex justify-between items-center px-0.5">
+                  <span className="font-label-sm text-label-sm text-outline">{passwordStrength.label}</span>
+                  <span className={`font-label-sm text-label-sm font-semibold ${passwordStrength.color}`}>
+                    {passwordStrength.tag}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms & Privacy checkbox */}
+            <label className="flex items-start gap-3 mt-1 cursor-pointer select-none group">
               <input
-                id="signup-password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
+                type="checkbox"
+                id="signup-terms"
                 required
-                minLength={6}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-10 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                checked={agreeToTerms}
+                onChange={(e) => setAgreeToTerms(e.target.checked)}
+                className="peer sr-only"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              <div className="w-5 h-5 min-w-[20px] rounded bg-surface-container-lowest flex items-center justify-center mt-0.5 transition-all peer-checked:bg-primary peer-checked:text-on-primary text-transparent group-hover:bg-surface-container">
+                <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+              </div>
+              <span className="font-body-sm text-body-sm text-on-surface-variant leading-tight">
+                I agree to the{' '}
+                <Link to="/terms" className="text-on-surface underline hover:text-primary">
+                  Terms of Service
+                </Link>{' '}
+                &{' '}
+                <Link to="/privacy" className="text-on-surface underline hover:text-primary">
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+
+            {/* Error message */}
+            {errorMessage && (
+              <div
+                className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-3 text-sm text-error"
+                aria-live="polite"
               >
-                {showPassword ? (
-                  <EyeOff className="size-4" strokeWidth={1.8} />
-                ) : (
-                  <Eye className="size-4" strokeWidth={1.8} />
-                )}
-              </button>
-            </div>
+                <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
+                <p>{errorMessage}</p>
+              </div>
+            )}
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>{isSubmitting ? 'Creating account…' : 'Create account'}</span>
+              {!isSubmitting && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
+            </button>
+          </form>
+
+          {/* Bottom switch link */}
+          <div className="mt-5 text-center">
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              Already have an account?{' '}
+              <Link to="/login" className="font-label-md text-label-md text-primary font-semibold hover:underline ml-1">
+                Log in
+              </Link>
+            </p>
           </div>
-
-          {errorMessage && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
-              <p>{errorMessage}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? 'Creating account…' : 'Sign up'}
-          </button>
-        </form>
-
-        <p className="mt-5 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-primary hover:text-primary/80">
-            Log in
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   )
