@@ -3,45 +3,98 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+@theme {
+  /* Reference design color palette */
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1c1b1b;
+  --color-surface-container: #201f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353534;
+  --color-surface-variant: #353534;
+  --color-surface-dim: #131313;
+  --color-surface-bright: #3a3939;
+  --color-background: #131313;
+  --color-on-background: #e5e2e1;
+  --color-on-surface: #e5e2e1;
+  --color-on-surface-variant: #bbcabf;
+  --color-primary: #4edea3;
+  --color-primary-container: #10b981;
+  --color-primary-fixed: #6ffbbe;
+  --color-primary-fixed-dim: #4edea3;
+  --color-on-primary: #003824;
+  --color-on-primary-container: #00422b;
+  --color-on-primary-fixed: #002113;
+  --color-secondary: #68dba9;
+  --color-secondary-container: #25a475;
+  --color-secondary-fixed: #85f8c4;
+  --color-secondary-fixed-dim: #68dba9;
+  --color-on-secondary: #003825;
+  --color-on-secondary-container: #00311f;
+  --color-on-secondary-fixed: #002114;
+  --color-on-secondary-fixed-variant: #005137;
+  --color-tertiary: #ffb2b7;
+  --color-tertiary-container: #ff7886;
+  --color-tertiary-fixed: #ffdadb;
+  --color-tertiary-fixed-dim: #ffb2b7;
+  --color-on-tertiary: #67001b;
+  --color-on-tertiary-container: #780021;
+  --color-on-tertiary-fixed: #40000d;
+  --color-on-tertiary-fixed-variant: #92002a;
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+  --color-outline: #86948a;
+  --color-outline-variant: #3c4a42;
+  --color-inverse-surface: #e5e2e1;
+  --color-inverse-on-surface: #313030;
+  --color-inverse-primary: #006c49;
+  --color-surface-tint: #4edea3;
+
+  /* Font families */
+  --font-headline: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Font sizes */
+  --font-size-headline-xl: 2.25rem;
+  --line-height-headline-xl: 2.5rem;
+  --letter-spacing-headline-xl: -0.025em;
+  --font-size-headline-lg: 1.875rem;
+  --line-height-headline-lg: 2.25rem;
+  --letter-spacing-headline-lg: -0.02em;
+  --font-size-headline-md: 1.5rem;
+  --line-height-headline-md: 2rem;
+  --letter-spacing-headline-md: -0.015em;
+  --font-size-headline-sm: 1.25rem;
+  --line-height-headline-sm: 1.75rem;
+  --letter-spacing-headline-sm: -0.01em;
+  --font-size-headline-lg-mobile: 1.5rem;
+  --line-height-headline-lg-mobile: 2rem;
+  --letter-spacing-headline-lg-mobile: -0.015em;
+  --font-size-headline-md-mobile: 1.25rem;
+  --line-height-headline-md-mobile: 1.75rem;
+  --letter-spacing-headline-md-mobile: -0.01em;
+  --font-size-headline-sm-mobile: 1.125rem;
+  --line-height-headline-sm-mobile: 1.5rem;
+  --letter-spacing-headline-sm-mobile: -0.005em;
+  --font-size-label-lg: 1rem;
+  --line-height-label-lg: 1.5rem;
+  --letter-spacing-label-lg: 0.01em;
+  --font-size-label-md: 0.875rem;
+  --line-height-label-md: 1.25rem;
+  --letter-spacing-label-md: 0.015em;
+  --font-size-label-sm: 0.75rem;
+  --line-height-label-sm: 1rem;
+  --letter-spacing-label-sm: 0.02em;
+  --font-size-body-lg: 1rem;
+  --line-height-body-lg: 1.5rem;
+  --letter-spacing-body-lg: 0.01em;
+  --font-size-body-md: 0.875rem;
+  --line-height-body-md: 1.25rem;
+  --letter-spacing-body-md: 0.015em;
+  --font-size-body-sm: 0.75rem;
+  --line-height-body-sm: 1rem;
+  --letter-spacing-body-sm: 0.02em;
 }
 
 :root {

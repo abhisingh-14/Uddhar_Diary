@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [termsError, setTermsError] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -28,7 +29,15 @@ export default function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     setErrorMessage('')
+    setTermsError('')
     setIsSubmitting(true)
+
+    // Custom validation for terms checkbox
+    if (!agreeToTerms) {
+      setTermsError('You must agree to the Terms of Service and Privacy Policy')
+      setIsSubmitting(false)
+      return
+    }
 
     try {
       const { error } = await supabase.auth.signUp({ email, password })
@@ -57,20 +66,20 @@ export default function SignupPage() {
 
           {/* Form heading */}
           <div className="mb-8 hidden lg:block">
-            <span className="font-label-sm text-label-sm uppercase tracking-widest text-outline block">
+            <span className="font-body text-label-sm uppercase tracking-widest text-outline block">
               Start splitting bills
             </span>
-            <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">
+            <h2 className="font-headline text-headline-lg font-bold text-on-surface mt-1">
               Create your account
             </h2>
           </div>
 
           {/* Mobile form heading */}
           <div className="mb-6 lg:hidden">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold block mb-1">
+            <span className="font-body text-label-sm uppercase tracking-wider text-primary font-bold block mb-1">
               CREATE AN ACCOUNT
             </span>
-            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">
+            <h2 className="font-headline text-headline-sm text-on-surface font-semibold tracking-tight">
               Sign up for diary
             </h2>
           </div>
@@ -79,7 +88,7 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full name field */}
             <div className="space-y-1.5">
-              <label htmlFor="signup-fullname" className="block font-label-md text-label-md text-on-surface-variant">
+              <label htmlFor="signup-fullname" className="block font-body text-label-md text-on-surface-variant">
                 Full name
               </label>
               <div className="relative rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
@@ -91,14 +100,14 @@ export default function SignupPage() {
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                   placeholder="Alex Morgan"
-                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
                 />
               </div>
             </div>
 
             {/* Email field */}
             <div className="space-y-1.5">
-              <label htmlFor="signup-email" className="block font-label-md text-label-md text-on-surface-variant">
+              <label htmlFor="signup-email" className="block font-body text-label-md text-on-surface-variant">
                 Email address
               </label>
               <div className="relative rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
@@ -110,14 +119,14 @@ export default function SignupPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="alex@example.com"
-                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
                 />
               </div>
             </div>
 
             {/* Password field */}
             <div className="space-y-1.5">
-              <label htmlFor="signup-password" className="block font-label-md text-label-md text-on-surface-variant">
+              <label htmlFor="signup-password" className="block font-body text-label-md text-on-surface-variant">
                 Password
               </label>
               <div className="relative flex items-center rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
@@ -130,7 +139,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Create a secure password"
-                  className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                  className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-on-surface font-body text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
                 />
                 <button
                   type="button"
@@ -146,7 +155,7 @@ export default function SignupPage() {
 
               {/* 3-segment password strength indicator */}
               <div className="mt-1 flex flex-col gap-1.5">
-                <div className="grid grid-cols-3 gap-1.5 h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden p-0.5">
+                <div className="grid grid-cols-3 gap-1.5 h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-colors duration-300 ${
                       passwordStrength.level >= 1
@@ -171,11 +180,11 @@ export default function SignupPage() {
                     className={`h-full rounded-full transition-colors duration-300 ${
                       passwordStrength.level >= 3 ? 'bg-primary' : 'bg-surface-container-highest'
                     }`}
-                  />
+                  ></div>
                 </div>
                 <div className="flex justify-between items-center px-0.5">
-                  <span className="font-label-sm text-label-sm text-outline">{passwordStrength.label}</span>
-                  <span className={`font-label-sm text-label-sm font-semibold ${passwordStrength.color}`}>
+                  <span className="font-body text-label-sm text-outline">{passwordStrength.label}</span>
+                  <span className={`font-body text-label-sm font-semibold ${passwordStrength.color}`}>
                     {passwordStrength.tag}
                   </span>
                 </div>
@@ -183,29 +192,39 @@ export default function SignupPage() {
             </div>
 
             {/* Terms & Privacy checkbox */}
-            <label className="flex items-start gap-3 mt-1 cursor-pointer select-none group">
-              <input
-                type="checkbox"
-                id="signup-terms"
-                required
-                checked={agreeToTerms}
-                onChange={(e) => setAgreeToTerms(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="w-5 h-5 min-w-[20px] rounded bg-surface-container-lowest flex items-center justify-center mt-0.5 transition-all peer-checked:bg-primary peer-checked:text-on-primary text-transparent group-hover:bg-surface-container">
-                <span className="material-symbols-outlined text-[16px] font-bold">check</span>
-              </div>
-              <span className="font-body-sm text-body-sm text-on-surface-variant leading-tight">
-                I agree to the{' '}
-                <Link to="/terms" className="text-on-surface underline hover:text-primary">
-                  Terms of Service
-                </Link>{' '}
-                &{' '}
-                <Link to="/privacy" className="text-on-surface underline hover:text-primary">
-                  Privacy Policy
-                </Link>
-              </span>
-            </label>
+            <div className="flex flex-col gap-1.5 mt-1">
+              <label className="flex items-start gap-3 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  id="signup-terms"
+                  checked={agreeToTerms}
+                  onChange={(e) => {
+                    setAgreeToTerms(e.target.checked)
+                    if (e.target.checked) setTermsError('')
+                  }}
+                  className="peer sr-only"
+                />
+                <div className="w-5 h-5 min-w-[20px] rounded bg-surface-container-lowest flex items-center justify-center mt-0.5 transition-all peer-checked:bg-primary peer-checked:text-on-primary text-transparent group-hover:bg-surface-container">
+                  <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+                </div>
+                <span className="font-body text-body-sm text-on-surface-variant leading-tight">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-on-surface underline hover:text-primary">
+                    Terms of Service
+                  </Link>{' '}
+                  &{' '}
+                  <Link to="/privacy" className="text-on-surface underline hover:text-primary">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </label>
+              {termsError && (
+                <p className="text-sm text-error flex items-center gap-1.5 ml-8" aria-live="polite">
+                  <AlertCircle className="size-3.5 shrink-0" strokeWidth={1.8} />
+                  {termsError}
+                </p>
+              )}
+            </div>
 
             {/* Error message */}
             {errorMessage && (
@@ -222,7 +241,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-body text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Creating account…' : 'Create account'}</span>
               {!isSubmitting && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
@@ -231,9 +250,9 @@ export default function SignupPage() {
 
           {/* Bottom switch link */}
           <div className="mt-5 text-center">
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
+            <p className="font-body text-body-sm text-on-surface-variant">
               Already have an account?{' '}
-              <Link to="/login" className="font-label-md text-label-md text-primary font-semibold hover:underline ml-1">
+              <Link to="/login" className="font-body text-label-md text-primary font-semibold hover:underline ml-1">
                 Log in
               </Link>
             </p>

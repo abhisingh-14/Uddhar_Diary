@@ -11,17 +11,17 @@ export default function AuthBrandPanel() {
           <Logo size={36} />
         </div>
         <div className="flex flex-col">
-          <span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">Uddhar Diary</span>
-          <span className="font-label-sm text-label-sm tracking-wider uppercase text-outline">Ledger · Settlements</span>
+          <span className="font-headline text-headline-sm tracking-tight text-on-surface">Uddhar Diary</span>
+          <span className="font-body text-label-sm tracking-wider uppercase text-outline">Ledger · Settlements</span>
         </div>
       </div>
 
       {/* Main headline */}
       <div className="my-0 max-w-xl z-10 flex flex-col gap-8">
         <div className="space-y-4">
-          <h1 className="font-headline-xl text-headline-xl text-on-surface leading-tight tracking-tight">
+          <h1 className="font-headline text-headline-xl text-on-surface leading-tight tracking-tight">
             Split the bill.<br />
-            <span className="text-on-surface-variant font-headline-lg text-headline-lg font-normal">
+            <span className="text-on-surface-variant font-headline text-headline-lg font-normal">
               Never lose track of who owes what.
             </span>
           </h1>
@@ -35,8 +35,8 @@ export default function AuthBrandPanel() {
               <span className="material-symbols-outlined text-[20px]">document_scanner</span>
             </div>
             <div className="space-y-0.5">
-              <div className="font-headline-sm text-body-lg font-medium text-on-surface">Scan a bill photo</div>
-              <p className="font-body-sm text-body-sm text-outline leading-relaxed">
+              <div className="font-headline text-body-lg font-medium text-on-surface">Scan a bill photo</div>
+              <p className="font-body text-body-sm text-outline leading-relaxed">
                 Auto-detect line items, tax, and tip instantly with precision OCR extraction.
               </p>
             </div>
@@ -48,8 +48,8 @@ export default function AuthBrandPanel() {
               <span className="material-symbols-outlined text-[20px]">pie_chart</span>
             </div>
             <div className="space-y-0.5">
-              <div className="font-headline-sm text-body-lg font-medium text-on-surface">Split with friends</div>
-              <p className="font-body-sm text-body-sm text-outline leading-relaxed">
+              <div className="font-headline text-body-lg font-medium text-on-surface">Split with friends</div>
+              <p className="font-body text-body-sm text-outline leading-relaxed">
                 Divide expenses evenly or by custom percentages. Everyone pays their fair share.
               </p>
             </div>
@@ -61,8 +61,8 @@ export default function AuthBrandPanel() {
               <span className="material-symbols-outlined text-[20px]">mark_email_read</span>
             </div>
             <div className="space-y-0.5">
-              <div className="font-headline-sm text-body-lg font-medium text-on-surface">Gentle email reminders</div>
-              <p className="font-body-sm text-body-sm text-outline leading-relaxed">
+              <div className="font-headline text-body-lg font-medium text-on-surface">Gentle email reminders</div>
+              <p className="font-body text-body-sm text-outline leading-relaxed">
                 Send friendly nudge emails when debts are overdue. No awkward conversations needed.
               </p>
             </div>

@@ -45,20 +45,20 @@ export default function LoginPage() {
 
           {/* Form heading */}
           <div className="mb-8 hidden lg:block">
-            <span className="font-label-sm text-label-sm uppercase tracking-widest text-outline block">
+            <span className="font-body text-label-sm uppercase tracking-widest text-outline block">
               Welcome back
             </span>
-            <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">
+            <h2 className="font-headline text-headline-lg font-bold text-on-surface mt-1">
               Sign in to diary
             </h2>
           </div>
 
           {/* Mobile form heading */}
           <div className="mb-6 lg:hidden">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-semibold block">
+            <span className="font-body text-label-sm uppercase tracking-wider text-primary font-semibold block">
               Welcome Back
             </span>
-            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">
+            <h2 className="font-headline text-headline-sm text-on-surface font-semibold tracking-tight">
               Log in to your account
             </h2>
           </div>
@@ -67,7 +67,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email field */}
             <div className="space-y-1.5">
-              <label htmlFor="login-email" className="block font-label-md text-label-md text-on-surface-variant">
+              <label htmlFor="login-email" className="block font-body text-label-md text-on-surface-variant">
                 Email address
               </label>
               <div className="relative rounded-lg bg-surface-container focus-within:ring-1 focus-within:ring-primary">
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                  className="w-full bg-transparent px-3.5 py-2.5 text-on-surface font-body text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
                 />
               </div>
             </div>
@@ -87,12 +87,12 @@ export default function LoginPage() {
             {/* Password field */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="login-password" className="block font-label-md text-label-md text-on-surface-variant">
+                <label htmlFor="login-password" className="block font-body text-label-md text-on-surface-variant">
                   Password
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="font-label-sm text-label-sm text-primary hover:underline"
+                  className="font-body text-label-sm text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -106,7 +106,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Enter your password"
-                  className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-on-surface font-body-md text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
+                  className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-on-surface font-body text-body-md placeholder:text-outline outline-none min-h-[44px] lg:min-h-0"
                 />
                 <button
                   type="button"
@@ -136,7 +136,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container font-label-lg text-label-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container font-body text-label-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 shadow-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Signing in…' : 'Sign in'}</span>
               {!isSubmitting && <span className="material-symbols-outlined text-base">arrow_forward</span>}
@@ -145,9 +145,9 @@ export default function LoginPage() {
 
           {/* Bottom switch link */}
           <div className="pt-5 text-center">
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
+            <p className="font-body text-body-sm text-on-surface-variant">
               Don&apos;t have an account?{' '}
-              <Link to="/signup" className="font-label-sm text-label-sm text-primary hover:text-primary-fixed ml-1 font-semibold underline underline-offset-4">
+              <Link to="/signup" className="font-body text-label-sm text-primary hover:text-primary-fixed ml-1 font-semibold underline underline-offset-4">
                 Sign up
               </Link>
             </p>

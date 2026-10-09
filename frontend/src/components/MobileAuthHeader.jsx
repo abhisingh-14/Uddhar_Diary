@@ -12,11 +12,11 @@ export default function MobileAuthHeader() {
       </div>
       
       {/* Brand name and tagline */}
-      <h1 className="font-headline-lg-mobile text-headline-lg-mobile tracking-tight text-on-surface flex items-center justify-center gap-1.5 relative z-10">
+      <h1 className="font-headline text-headline-lg-mobile tracking-tight text-on-surface flex items-center justify-center gap-1.5 relative z-10">
         <span>Uddhar</span>
         <span className="text-primary font-bold">Diary</span>
       </h1>
-      <p className="font-body-sm text-body-sm text-on-surface-variant max-w-[260px] mt-1 text-center relative z-10">
+      <p className="font-body text-body-sm text-on-surface-variant max-w-[260px] mt-1 text-center relative z-10">
         Split the bill. Never lose track of who owes what.
       </p>
     </div>
