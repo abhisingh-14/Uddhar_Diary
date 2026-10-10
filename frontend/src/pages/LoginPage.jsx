@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
 import AuthBrandPanel from '../components/AuthBrandPanel'
 import MobileAuthHeader from '../components/MobileAuthHeader'
@@ -114,9 +114,7 @@ export default function LoginPage() {
                   className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  <span className="material-symbols-outlined text-lg">
-                    {showPassword ? 'visibility_off' : 'visibility'}
-                  </span>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -139,7 +137,7 @@ export default function LoginPage() {
               className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container font-body text-label-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 shadow-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Signing in…' : 'Sign in'}</span>
-              {!isSubmitting && <span className="material-symbols-outlined text-base">arrow_forward</span>}
+              {!isSubmitting && <ArrowRight size={16} />}
             </button>
           </form>
 

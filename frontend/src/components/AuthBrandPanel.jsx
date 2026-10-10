@@ -1,4 +1,5 @@
 import Logo from './Logo'
+import { ScanLine, PieChart, MailCheck } from 'lucide-react'
 
 export default function AuthBrandPanel() {
   return (
@@ -32,7 +33,7 @@ export default function AuthBrandPanel() {
           {/* Scan a bill photo */}
           <div className="flex items-start gap-4 p-4 rounded-xl bg-surface-container-low transition-all duration-200">
             <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary">
-              <span className="material-symbols-outlined text-[20px]">document_scanner</span>
+              <ScanLine size={20} />
             </div>
             <div className="space-y-0.5">
               <div className="font-headline text-body-lg font-medium text-on-surface">Scan a bill photo</div>
@@ -45,7 +46,7 @@ export default function AuthBrandPanel() {
           {/* Split with friends */}
           <div className="flex items-start gap-4 p-4 rounded-xl bg-surface-container-low transition-all duration-200">
             <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary">
-              <span className="material-symbols-outlined text-[20px]">pie_chart</span>
+              <PieChart size={20} />
             </div>
             <div className="space-y-0.5">
               <div className="font-headline text-body-lg font-medium text-on-surface">Split with friends</div>
@@ -58,7 +59,7 @@ export default function AuthBrandPanel() {
           {/* Gentle email reminders */}
           <div className="flex items-start gap-4 p-4 rounded-xl bg-surface-container-low transition-all duration-200">
             <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary">
-              <span className="material-symbols-outlined text-[20px]">mark_email_read</span>
+              <MailCheck size={20} />
             </div>
             <div className="space-y-0.5">
               <div className="font-headline text-body-lg font-medium text-on-surface">Gentle email reminders</div>

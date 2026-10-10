@@ -14,6 +14,7 @@
   --color-surface-dim: #131313;
   --color-surface-bright: #3a3939;
   --color-background: #131313;
+  --color-foreground: #e5e2e1;
   --color-on-background: #e5e2e1;
   --color-on-surface: #e5e2e1;
   --color-on-surface-variant: #bbcabf;
@@ -50,6 +51,7 @@
   --color-inverse-on-surface: #313030;
   --color-inverse-primary: #006c49;
   --color-surface-tint: #4edea3;
+  --color-ring: #4edea3;
 
   /* Font families */
   --font-headline: "Plus Jakarta Sans", sans-serif;
@@ -207,7 +209,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;

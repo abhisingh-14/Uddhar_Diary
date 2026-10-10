@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
 import AuthBrandPanel from '../components/AuthBrandPanel'
 import MobileAuthHeader from '../components/MobileAuthHeader'
@@ -147,9 +147,7 @@ export default function SignupPage() {
                   className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  <span className="material-symbols-outlined text-lg">
-                    {showPassword ? 'visibility_off' : 'visibility'}
-                  </span>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
 
@@ -205,7 +203,7 @@ export default function SignupPage() {
                   className="peer sr-only"
                 />
                 <div className="w-5 h-5 min-w-[20px] rounded bg-surface-container-lowest flex items-center justify-center mt-0.5 transition-all peer-checked:bg-primary peer-checked:text-on-primary text-transparent group-hover:bg-surface-container">
-                  <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+                  <Check size={14} strokeWidth={3} />
                 </div>
                 <span className="font-body text-body-sm text-on-surface-variant leading-tight">
                   I agree to the{' '}
@@ -244,7 +242,7 @@ export default function SignupPage() {
               className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-body text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Creating account…' : 'Create account'}</span>
-              {!isSubmitting && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
+              {!isSubmitting && <ArrowRight size={18} />}
             </button>
           </form>
 
