@@ -87,31 +87,31 @@ export default function QuickAmountForm({ onContinue }) {
   return (
     <div className="w-full max-w-[760px] animate-in fade-in duration-500">
       <div className="mb-8">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Quick split</p>
-        <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
+        <p className="mb-3 font-body text-label-sm font-semibold uppercase tracking-[0.18em] text-primary">Quick split</p>
+        <h2 className="font-headline text-balance text-3xl font-semibold tracking-[-0.045em] text-on-surface md:text-[40px] md:leading-[1.05]">
           Enter the total amount
         </h2>
-        <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">
+        <p className="mt-4 max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
           Skip the photo upload and directly enter the bill amount to split with your group.
         </p>
       </div>
 
-      <div className="space-y-6 rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
+      <div className="space-y-6 rounded-2xl bg-surface-container-low p-6 shadow-2xl md:p-8">
         <div className="space-y-2">
-          <label className="text-xs font-medium text-foreground">Amount</label>
+          <label className="font-body text-xs font-medium text-on-surface-variant">Amount</label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">₹</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-on-surface-variant">₹</span>
             <input
               type="text"
               inputMode="decimal"
               value={amount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0.00"
-              className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-3 text-lg font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              className="w-full rounded-lg bg-surface-container py-3 pl-10 pr-4 font-body text-lg font-semibold text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
             />
           </div>
           {amountError && (
-            <div className="flex items-center gap-2 text-xs text-destructive">
+            <div className="flex items-center gap-2 font-body text-xs text-error">
               <AlertCircle className="size-3.5" />
               {amountError}
             </div>
@@ -119,9 +119,9 @@ export default function QuickAmountForm({ onContinue }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-medium text-foreground">Category</label>
+          <label className="font-body text-xs font-medium text-on-surface-variant">Category</label>
           {isLoadingCategories ? (
-            <p className="text-xs text-muted-foreground">Loading categories…</p>
+            <p className="font-body text-xs text-on-surface-variant">Loading categories…</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
@@ -129,10 +129,10 @@ export default function QuickAmountForm({ onContinue }) {
                   key={category.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(category.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`rounded-lg px-4 py-2 font-body text-sm font-medium transition-colors ${
                     selectedCategoryId === category.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                   }`}
                 >
                   {category.name}
@@ -144,32 +144,32 @@ export default function QuickAmountForm({ onContinue }) {
 
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">Label (optional)</label>
+            <label className="font-body text-xs font-medium text-on-surface-variant">Label (optional)</label>
             <input
               type="text"
               value={merchantName}
               onChange={(e) => setMerchantName(e.target.value)}
               placeholder="e.g., Dinner at Cafe"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              className="w-full rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">Date</label>
+            <label className="font-body text-xs font-medium text-on-surface-variant">Date</label>
             <input
               type="date"
               value={billDate}
               onChange={(e) => setBillDate(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              className="w-full rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
-        <div className="pt-4 border-t border-border">
+        <div className="border-t border-outline-variant pt-4">
           <button
             type="button"
             onClick={handleContinue}
             disabled={!amount || !selectedCategoryId || !!amountError}
-            className="group flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+            className="group flex items-center justify-center gap-2 rounded-xl bg-primary-container px-5 py-2.5 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continue
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />

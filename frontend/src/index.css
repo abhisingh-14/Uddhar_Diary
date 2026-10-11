@@ -212,6 +212,6 @@
     @apply outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-surface-container-lowest text-on-surface font-body;
   }
 }

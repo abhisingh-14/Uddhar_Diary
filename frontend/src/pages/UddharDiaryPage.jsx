@@ -39,30 +39,30 @@ export default function UddharDiaryPage() {
     <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
       <div className="w-full max-w-[760px] animate-in fade-in duration-500">
         <div className="max-w-[500px]">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="mb-3 font-body text-label-sm font-semibold uppercase tracking-[0.18em] text-primary">
             Your ledger
           </p>
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
+            <h2 className="font-headline text-balance text-3xl font-semibold tracking-[-0.045em] text-on-surface md:text-[40px] md:leading-[1.05]">
               Who owes what
             </h2>
             <button
               type="button"
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="flex items-center gap-1.5 rounded-xl bg-primary-container px-3.5 py-2 font-body text-xs font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
             >
               <Plus className="size-4" strokeWidth={1.8} />
               Add loan / due
             </button>
           </div>
-          <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">
+          <p className="mt-4 max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
             Track what people owe you and what you still need to settle up.
           </p>
         </div>
 
-        <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="mt-10 rounded-2xl bg-surface-container-low p-6 shadow-2xl">
           {status === 'loading' && (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 py-12 font-body text-sm text-on-surface-variant">
               <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
               Loading balances…
             </div>
@@ -70,14 +70,14 @@ export default function UddharDiaryPage() {
 
           {status === 'error' && (
             <div className="flex flex-col items-center gap-4 py-8 text-center">
-              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+              <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
                 <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
                 <p>{errorMessage}</p>
               </div>
               <button
                 type="button"
                 onClick={loadBalances}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                className="rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
               >
                 Try again
               </button>

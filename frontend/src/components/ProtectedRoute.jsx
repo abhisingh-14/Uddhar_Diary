@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center py-16 text-sm text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center py-16 font-body text-sm text-on-surface-variant">
         <Loader2 className="mr-2 size-4 animate-spin" strokeWidth={1.8} />
         Loading…
       </div>

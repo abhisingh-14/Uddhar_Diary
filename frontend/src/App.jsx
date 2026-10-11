@@ -21,7 +21,7 @@ export default function App() {
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/reset-password'
 
   return (
-    <main className="h-screen bg-background text-foreground overflow-hidden">
+    <main className="h-screen bg-surface-container-lowest text-on-surface overflow-hidden">
       <div className="flex h-full flex-col md:flex-row">
         {!isAuthPage && <Navbar />}
 
