@@ -100,50 +100,50 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
 
   return (
     <div
-      className={`rounded-xl border px-4 py-3.5 ${
+      className={`rounded-xl px-4 py-3.5 transition-colors ${
         isSettled
-          ? 'border-border/60 bg-muted/30'
-          : 'border-border bg-background'
+          ? 'bg-surface-container/40'
+          : 'bg-surface-container'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p
-            className={`text-sm font-medium ${
-              isSettled ? 'text-muted-foreground' : 'text-foreground'
+            className={`font-body text-sm font-medium ${
+              isSettled ? 'text-on-surface-variant' : 'text-on-surface'
             }`}
           >
             {directionLabel}
           </p>
           {debt.merchantName ? (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{debt.merchantName}</p>
+            <p className="mt-0.5 truncate font-body text-xs text-on-surface-variant">{debt.merchantName}</p>
           ) : isManualDebt && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            <p className="mt-0.5 truncate font-body text-xs text-on-surface-variant">
               {debt.kind === 'old_due' ? 'Old due' : 'Loan'}
             </p>
           )}
           {debt.note && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{debt.note}</p>
+            <p className="mt-0.5 truncate font-body text-xs text-on-surface-variant">{debt.note}</p>
           )}
           {formattedDate && (
-            <p className="mt-1 text-[11px] text-muted-foreground">{formattedDate}</p>
+            <p className="mt-1 font-body text-[11px] text-on-surface-variant">{formattedDate}</p>
           )}
         </div>
 
         <div className="shrink-0 text-right">
           <p
-            className={`text-sm font-semibold tabular-nums ${
+            className={`font-body text-sm font-semibold tabular-nums ${
               isSettled
-                ? 'text-muted-foreground line-through decoration-muted-foreground/60'
+                ? 'text-on-surface-variant line-through decoration-on-surface-variant/60'
                 : debt.direction === 'you_owe_them'
-                  ? 'text-destructive'
-                  : 'text-foreground'
+                  ? 'text-error'
+                  : 'text-on-surface'
             }`}
           >
             {formatPaise(debt.amountPaise)}
           </p>
           {!isSettled && debt.remainingPaise < debt.amountPaise && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 font-body text-[11px] text-on-surface-variant">
               {formatPaise(debt.remainingPaise)} remaining
             </p>
           )}
@@ -153,19 +153,19 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
       <div className="mt-2.5 flex items-center gap-1.5">
         {isSettled ? (
           <>
-            <CheckCircle2 className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
-            <span className="text-[11px] font-medium text-muted-foreground">Settled</span>
+            <CheckCircle2 className="size-3.5 text-on-surface-variant" strokeWidth={1.8} />
+            <span className="font-body text-[11px] font-medium text-on-surface-variant">Settled</span>
           </>
         ) : (
           <>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+            <span className="rounded-full bg-primary-container/15 px-2 py-0.5 font-body text-[11px] font-medium text-primary">
               Outstanding
             </span>
             {!showSettleForm && (
               <button
                 type="button"
                 onClick={handleSettleClick}
-                className="ml-auto rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="ml-auto rounded-lg bg-primary-container px-2.5 py-1 font-body text-[11px] font-semibold text-on-primary-container transition-colors hover:bg-secondary-container"
               >
                 Settle
               </button>
@@ -178,7 +178,7 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
               type="button"
               onClick={() => onEdit(debt)}
               disabled={isSettling || isDeleting}
-              className="rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              className="rounded-lg bg-surface-container-high px-2.5 py-1 font-body text-[11px] font-medium text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-40"
             >
               Edit
             </button>
@@ -186,20 +186,20 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
               type="button"
               onClick={handleDeleteClick}
               disabled={isSettling || isDeleting}
-              className="rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+              className="rounded-lg bg-surface-container-high px-2.5 py-1 font-body text-[11px] font-medium text-error transition-colors hover:bg-error-container/20 disabled:opacity-40"
             >
               Delete
             </button>
           </>
         )}
         {showDeleteConfirm && (
-          <div className="ml-auto flex items-center gap-2 text-[11px]">
-            <span className="text-muted-foreground">Delete?</span>
+          <div className="ml-auto flex items-center gap-2 font-body text-[11px]">
+            <span className="text-on-surface-variant">Delete?</span>
             <button
               type="button"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="rounded-lg bg-destructive px-2 py-0.5 font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-40"
+              className="rounded-lg bg-error-container px-2 py-0.5 font-medium text-on-error-container transition-colors hover:bg-error-container/80 disabled:opacity-40"
             >
               Yes
             </button>
@@ -207,7 +207,7 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
               type="button"
               onClick={handleDeleteCancel}
               disabled={isDeleting}
-              className="rounded-lg border border-border bg-background px-2 py-0.5 font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              className="rounded-lg bg-surface-container-high px-2 py-0.5 font-medium text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-40"
             >
               No
             </button>
@@ -216,10 +216,10 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
       </div>
 
       {showSettleForm && (
-        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3">
+        <div className="mt-3 rounded-xl bg-surface-container-low p-3.5 shadow-md">
           <form onSubmit={handleSubmitSettle} className="space-y-2">
             <div className="flex items-center gap-2">
-              <label htmlFor={`settle-amount-${debt.id}`} className="text-xs text-muted-foreground">
+              <label htmlFor={`settle-amount-${debt.id}`} className="font-body text-xs text-on-surface-variant">
                 Amount to pay:
               </label>
               <input
@@ -228,20 +228,20 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
                 value={amountPaise}
                 onChange={handleAmountChange}
                 disabled={isSettling}
-                className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                className="flex-1 rounded-lg bg-surface-container-lowest px-2.5 py-1 font-body text-xs text-on-surface tabular-nums outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 min="1"
                 max={debt.remainingPaise}
               />
-              <span className="text-xs text-muted-foreground">paise</span>
+              <span className="font-body text-xs text-on-surface-variant">paise</span>
             </div>
             {error && (
-              <p className="text-[11px] text-destructive">{error}</p>
+              <p className="font-body text-[11px] text-error">{error}</p>
             )}
             <div className="flex items-center gap-2">
               <button
                 type="submit"
                 disabled={isSettling || !!error}
-                className="flex-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-primary-container px-3 py-1.5 font-body text-xs font-semibold text-on-primary-container transition-colors hover:bg-secondary-container disabled:opacity-50"
               >
                 {isSettling ? (
                   <span className="flex items-center justify-center gap-1.5">
@@ -256,7 +256,7 @@ export default function DebtHistoryItem({ debt, onSettle, onEdit, onDelete }) {
                 type="button"
                 onClick={handleCancelSettle}
                 disabled={isSettling}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="rounded-lg bg-surface-container-high px-3 py-1.5 font-body text-xs font-medium text-on-surface transition-colors hover:bg-surface-bright disabled:opacity-50"
               >
                 Cancel
               </button>

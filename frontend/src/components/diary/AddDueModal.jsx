@@ -200,15 +200,15 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg"
+        className="w-full max-w-md rounded-2xl bg-surface-container-low p-6 shadow-2xl"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">{isEditMode ? 'Edit entry' : 'Add loan / due'}</h2>
+          <h2 className="font-headline text-lg font-semibold text-on-surface">{isEditMode ? 'Edit entry' : 'Add loan / due'}</h2>
           <button
             type="button"
             onClick={() => !isSubmitting && onClose()}
             disabled={isSubmitting}
-            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+            className="rounded-lg p-1 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-40"
           >
             <X className="size-5" strokeWidth={1.8} />
           </button>
@@ -216,35 +216,35 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {submitError && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-3 font-body text-sm text-error">
               <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
               <p>{submitError}</p>
             </div>
           )}
 
           <div>
-            <label className="mb-2 block text-xs font-medium text-foreground">Person</label>
+            <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">Person</label>
             {isLoadingPeople ? (
-              <p className="text-xs text-muted-foreground">Loading people…</p>
+              <p className="font-body text-xs text-on-surface-variant">Loading people…</p>
             ) : peopleError ? (
-              <p className="text-xs text-destructive">{peopleError}</p>
+              <p className="font-body text-xs text-error">{peopleError}</p>
             ) : showAddPerson ? (
-              <div className="space-y-3 rounded-xl border border-border bg-background p-4">
+              <div className="space-y-3 rounded-xl bg-surface-container p-4">
                 <input
                   type="text"
                   value={newPersonName}
                   onChange={(e) => setNewPersonName(e.target.value)}
                   placeholder="Name"
                   disabled={isAddingPerson}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
+                  className="w-full rounded-lg bg-surface-container-lowest px-3 py-2 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
-                {addPersonError && <p className="text-xs text-destructive">{addPersonError}</p>}
+                {addPersonError && <p className="font-body text-xs text-error">{addPersonError}</p>}
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={handleAddPerson}
                     disabled={isAddingPerson}
-                    className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-lg bg-primary-container px-3 py-2 font-body text-xs font-semibold text-on-primary-container hover:bg-secondary-container disabled:opacity-50"
                   >
                     <UserPlus className="size-3.5" />
                     {isAddingPerson ? 'Adding…' : 'Add'}
@@ -257,7 +257,7 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
                       setNewPersonName('')
                     }}
                     disabled={isAddingPerson}
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40"
+                    className="font-body text-xs font-medium text-on-surface-variant hover:text-on-surface disabled:opacity-40"
                   >
                     Cancel
                   </button>
@@ -275,21 +275,21 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
                     }
                   }}
                   disabled={presetPersonId !== null || isEditMode}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
+                  className="w-full rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
-                  <option value="">Select a person</option>
+                  <option value="" className="bg-surface-container text-on-surface">Select a person</option>
                   {people.map((person) => (
-                    <option key={person.id} value={person.id}>
+                    <option key={person.id} value={person.id} className="bg-surface-container text-on-surface">
                       {person.name}
                     </option>
                   ))}
-                  <option value="__add_new__">+ Add new person</option>
+                  <option value="__add_new__" className="bg-surface-container text-primary font-medium">+ Add new person</option>
                 </select>
                 {!presetPersonId && (
                   <button
                     type="button"
                     onClick={() => setShowAddPerson(true)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80"
+                    className="flex items-center gap-1.5 font-body text-xs font-medium text-primary transition-colors hover:text-primary-fixed"
                   >
                     <Plus className="size-3.5" />
                     Add new person
@@ -300,15 +300,15 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-medium text-foreground">Direction</label>
+            <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">Direction</label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setDirection('they_owe_you')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                className={`flex-1 rounded-lg px-3 py-2 font-body text-xs font-medium transition-colors ${
                   direction === 'they_owe_you'
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-primary/40'
+                    ? 'bg-primary-container text-on-primary-container font-semibold shadow-md'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                 }`}
               >
                 They owe me
@@ -316,10 +316,10 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
               <button
                 type="button"
                 onClick={() => setDirection('you_owe_them')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                className={`flex-1 rounded-lg px-3 py-2 font-body text-xs font-medium transition-colors ${
                   direction === 'you_owe_them'
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-primary/40'
+                    ? 'bg-primary-container text-on-primary-container font-semibold shadow-md'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                 }`}
               >
                 I owe them
@@ -329,7 +329,7 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
 
           {!isEditMode && (
             <div>
-              <label className="mb-2 block text-xs font-medium text-foreground">Type</label>
+              <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">Type</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -337,10 +337,10 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
                     setKind('loan')
                     setDate('')
                   }}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                  className={`flex-1 rounded-lg px-3 py-2 font-body text-xs font-medium transition-colors ${
                     kind === 'loan'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background text-foreground hover:border-primary/40'
+                      ? 'bg-primary-container text-on-primary-container font-semibold shadow-md'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                   }`}
                 >
                   New loan
@@ -351,10 +351,10 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
                     setKind('old_due')
                     setDate(getLocalToday())
                   }}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                  className={`flex-1 rounded-lg px-3 py-2 font-body text-xs font-medium transition-colors ${
                     kind === 'old_due'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background text-foreground hover:border-primary/40'
+                      ? 'bg-primary-container text-on-primary-container font-semibold shadow-md'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                   }`}
                 >
                   Old due
@@ -365,19 +365,19 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
 
           {kind === 'old_due' || isEditMode ? (
             <div>
-              <label className="mb-2 block text-xs font-medium text-foreground">Date</label>
+              <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">Date</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 max={getLocalToday()}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           ) : null}
 
           <div>
-            <label className="mb-2 block text-xs font-medium text-foreground">Amount (₹)</label>
+            <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">Amount (₹)</label>
             <input
               ref={amountInputRef}
               type="text"
@@ -385,14 +385,14 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
             />
-            {amountError && <p className="mt-1 text-xs text-destructive">{amountError}</p>}
+            {amountError && <p className="mt-1 font-body text-xs text-error">{amountError}</p>}
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-medium text-foreground">
-              Note <span className="text-muted-foreground">(optional)</span>
+            <label className="mb-2 block font-body text-xs font-medium text-on-surface-variant">
+              Note <span className="text-on-surface-variant/70">(optional)</span>
             </label>
             <textarea
               value={note}
@@ -400,9 +400,9 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
               maxLength={200}
               rows={3}
               placeholder="Add a note..."
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full resize-none rounded-lg bg-surface-container px-3 py-2 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
             />
-            <p className="mt-1 text-xs text-muted-foreground text-right">
+            <p className="mt-1 text-right font-body text-xs text-on-surface-variant">
               {note.length} / 200
             </p>
           </div>
@@ -412,14 +412,14 @@ function AddDueForm({ onClose, onAdded, presetPersonId, editingDebt, onConflict 
               type="button"
               onClick={() => !isSubmitting && onClose()}
               disabled={isSubmitting}
-              className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 rounded-xl bg-surface-container px-4 py-2.5 font-body text-sm font-semibold text-on-surface-variant transition-transform hover:-translate-y-0.5 hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 rounded-xl bg-primary-container px-4 py-2.5 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isSubmitting ? 'Saving…' : 'Save'}
             </button>

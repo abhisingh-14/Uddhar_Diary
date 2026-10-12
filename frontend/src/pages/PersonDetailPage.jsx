@@ -129,29 +129,29 @@ export default function PersonDetailPage() {
       <div className="w-full max-w-[760px] animate-in fade-in duration-500">
         <Link
           to="/diary"
-          className="group mb-6 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="group mb-6 inline-flex items-center gap-2 font-body text-xs font-medium text-on-surface-variant transition-colors hover:text-on-surface"
         >
           <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
           Back to Uddhar Diary
         </Link>
 
         {status === 'loading' && (
-          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 py-16 font-body text-sm text-on-surface-variant">
             <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
             Loading debt history…
           </div>
         )}
 
         {status === 'notFound' && (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-sm">
-            <UserX className="size-8 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="text-lg font-semibold text-foreground">Person not found</h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface-container-low px-6 py-12 text-center shadow-2xl">
+            <UserX className="size-8 text-on-surface-variant" strokeWidth={1.5} />
+            <h2 className="font-headline text-lg font-semibold text-on-surface">Person not found</h2>
+            <p className="max-w-sm font-body text-sm text-on-surface-variant">
               This person doesn&apos;t exist or isn&apos;t linked to your account.
             </p>
             <Link
               to="/diary"
-              className="mt-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              className="mt-2 rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container hover:bg-secondary-container"
             >
               Back to Uddhar Diary
             </Link>
@@ -159,15 +159,15 @@ export default function PersonDetailPage() {
         )}
 
         {status === 'error' && (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-sm">
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="flex flex-col items-center gap-4 rounded-2xl bg-surface-container-low px-6 py-12 text-center shadow-2xl">
+            <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
               <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
               <p>{errorMessage}</p>
             </div>
             <button
               type="button"
               onClick={loadDebtHistory}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
             >
               Try again
             </button>
@@ -178,28 +178,28 @@ export default function PersonDetailPage() {
           <>
             <div className="max-w-[500px]">
               <div className="mb-4 flex items-center gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                <p className="font-body text-label-sm font-semibold uppercase tracking-[0.18em] text-primary">
                   Debt history
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-container px-3 py-1.5 font-body text-xs font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
                 >
                   <Plus className="size-3.5" />
                   Add loan / due
                 </button>
               </div>
-              <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
+              <h2 className="font-headline text-balance text-3xl font-semibold tracking-[-0.045em] text-on-surface md:text-[40px] md:leading-[1.05]">
                 {personName}
               </h2>
               <p
-                className={`mt-4 text-sm font-medium ${
+                className={`mt-4 font-body text-sm font-medium ${
                   summary.tone === 'negative'
-                    ? 'text-destructive'
+                    ? 'text-error'
                     : summary.tone === 'positive'
-                      ? 'text-foreground'
-                      : 'text-muted-foreground'
+                      ? 'text-on-surface'
+                      : 'text-on-surface-variant'
                 }`}
               >
                 {summary.prefix}
@@ -209,9 +209,9 @@ export default function PersonDetailPage() {
               </p>
             </div>
 
-            <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="mt-10 rounded-2xl bg-surface-container-low p-6 shadow-2xl">
               {debts.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+                <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container/40 px-4 py-8 text-center font-body text-sm text-on-surface-variant">
                   No debt entries yet for this person.
                 </p>
               ) : (
