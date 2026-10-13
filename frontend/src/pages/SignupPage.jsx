@@ -239,7 +239,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-body text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full h-12 px-4 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container rounded-xl font-body text-label-lg font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary-container/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Creating account…' : 'Create account'}</span>
               {!isSubmitting && <ArrowRight size={18} />}

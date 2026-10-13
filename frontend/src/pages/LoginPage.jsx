@@ -134,7 +134,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full min-h-[44px] lg:min-h-0 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container font-body text-label-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full h-12 px-4 bg-primary-container hover:bg-secondary-container active:scale-[0.98] text-on-primary-container font-body text-label-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-150 shadow-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Signing in…' : 'Sign in'}</span>
               {!isSubmitting && <ArrowRight size={16} />}
