@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { getExpensesByCategory } from '../../api/client';
 import { formatPaise } from '../../lib/money';
 
@@ -40,15 +41,29 @@ export default function CategoryBreakdown({ granularity, date }) {
   }, [granularity, date]);
 
   if (loading) {
-    return <div className="text-muted-foreground">Loading breakdown...</div>;
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 font-body text-sm text-on-surface-variant">
+        <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
+        Loading breakdown…
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-destructive">Error: {error}</div>;
+    return (
+      <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
+        <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
+        <p>Error: {error}</p>
+      </div>
+    );
   }
 
   if (data.length === 0) {
-    return <div className="text-muted-foreground italic">No expenses recorded for this period</div>;
+    return (
+      <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container/40 px-4 py-8 text-center font-body text-sm text-on-surface-variant">
+        No expenses recorded for this period.
+      </p>
+    );
   }
 
   return (
@@ -63,6 +78,8 @@ export default function CategoryBreakdown({ granularity, date }) {
               cx="50%"
               cy="50%"
               outerRadius={80}
+              stroke="#1c1b1b"
+              strokeWidth={2}
               label={({ categoryName }) => categoryName}
             >
               {data.map((entry, index) => (
@@ -72,12 +89,12 @@ export default function CategoryBreakdown({ granularity, date }) {
             <Tooltip 
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const data = payload[0].payload;
+                  const item = payload[0].payload;
                   return (
-                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-                      <p className="mb-1 text-sm font-medium text-foreground">{data.categoryName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Spent: <span className="font-semibold text-foreground">{formatPaise(data.totalPaise)}</span>
+                    <div className="rounded-xl border border-outline-variant/40 bg-surface-container p-3 shadow-xl">
+                      <p className="mb-1 font-body text-xs font-medium text-on-surface-variant">{item.categoryName}</p>
+                      <p className="font-body text-sm text-on-surface-variant">
+                        Spent: <span className="font-semibold tabular-nums text-on-surface">{formatPaise(item.totalPaise)}</span>
                       </p>
                     </div>
                   );
@@ -88,10 +105,22 @@ export default function CategoryBreakdown({ granularity, date }) {
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <ul className="mt-4 w-full space-y-1">
+      <ul className="mt-6 w-full space-y-2">
         {data.map((entry, index) => (
-          <li key={entry.categoryId || index} className="text-foreground">
-            {entry.categoryName} &rarr; {formatPaise(entry.totalPaise)}
+          <li
+            key={entry.categoryId || index}
+            className="flex items-center justify-between rounded-xl bg-surface-container px-4 py-3 font-body text-sm transition-colors hover:bg-surface-container-high"
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className="size-3 shrink-0 rounded-full"
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+              />
+              <span className="font-medium text-on-surface">{entry.categoryName}</span>
+            </div>
+            <span className="font-semibold tabular-nums text-on-surface">
+              {formatPaise(entry.totalPaise)}
+            </span>
           </li>
         ))}
       </ul>

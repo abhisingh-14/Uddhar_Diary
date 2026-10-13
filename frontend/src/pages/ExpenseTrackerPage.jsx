@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SpendOverTime from '../components/expenses/SpendOverTime';
 import CategoryBreakdown from '../components/expenses/CategoryBreakdown';
 
@@ -32,58 +32,74 @@ export default function ExpenseTrackerPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-4">Expense Tracker</h1>
-        <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+    <div className="flex flex-1 items-start justify-center px-5 py-10 md:px-12 md:py-16 lg:py-24">
+      <div className="w-full max-w-[760px] animate-in fade-in duration-500">
+        <div className="max-w-[500px]">
+          <p className="mb-3 font-body text-label-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            Overview / Analytics
+          </p>
+          <h1 className="font-headline text-balance text-3xl font-semibold tracking-[-0.045em] text-on-surface md:text-[40px] md:leading-[1.05]">
+            Expense Tracker
+          </h1>
+          <p className="mt-4 max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
+            Track your spending trends and category distribution over time.
+          </p>
+        </div>
+
+        <div className="mt-8 mb-8 inline-flex rounded-xl bg-surface-container p-1">
           <button
+            type="button"
             onClick={() => handleGranularityChange('week')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`rounded-lg px-4 py-2 font-body text-sm font-medium transition-colors ${
               granularity === 'week'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                ? 'bg-primary-container text-on-primary-container shadow-md'
+                : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             Week
           </button>
           <button
+            type="button"
             onClick={() => handleGranularityChange('month')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`rounded-lg px-4 py-2 font-body text-sm font-medium transition-colors ${
               granularity === 'month'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                ? 'bg-primary-container text-on-primary-container shadow-md'
+                : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             Month
           </button>
         </div>
-      </div>
 
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3">Spending Over Time</h2>
-          <SpendOverTime 
-            granularity={granularity} 
-            selectedBucket={selectedBucket}
-            setSelectedBucket={setSelectedBucket}
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-foreground">
-              Category Breakdown — {formatPeriodHeading()}
+        <div className="space-y-8">
+          <div className="rounded-2xl bg-surface-container-low p-6 shadow-2xl">
+            <h2 className="mb-4 font-headline text-lg font-semibold text-on-surface">
+              Spending Over Time
             </h2>
-            {selectedBucket && (
-              <button 
-                onClick={() => setSelectedBucket(null)}
-                className="text-sm text-primary hover:underline"
-              >
-                Back to current period
-              </button>
-            )}
+            <SpendOverTime 
+              granularity={granularity} 
+              selectedBucket={selectedBucket}
+              setSelectedBucket={setSelectedBucket}
+            />
           </div>
-          <CategoryBreakdown granularity={granularity} date={selectedBucket} />
+
+          <div className="rounded-2xl bg-surface-container-low p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-headline text-lg font-semibold text-on-surface">
+                Category Breakdown — {formatPeriodHeading()}
+              </h2>
+              {selectedBucket && (
+                <button 
+                  type="button"
+                  onClick={() => setSelectedBucket(null)}
+                  className="font-body text-xs font-semibold text-primary transition-colors hover:underline"
+                >
+                  Back to current period
+                </button>
+              )}
+            </div>
+            <CategoryBreakdown granularity={granularity} date={selectedBucket} />
+          </div>
         </div>
       </div>
     </div>

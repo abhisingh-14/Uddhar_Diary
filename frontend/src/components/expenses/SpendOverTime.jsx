@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { getExpensesOverTime } from '../../api/client';
 import { formatPaise } from '../../lib/money';
 
@@ -47,15 +48,29 @@ export default function SpendOverTime({ granularity, selectedBucket, setSelected
   };
 
   if (loading) {
-    return <div className="text-muted-foreground">Loading spending data...</div>;
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 font-body text-sm text-on-surface-variant">
+        <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
+        Loading spending data…
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-destructive">Error: {error}</div>;
+    return (
+      <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
+        <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
+        <p>Error: {error}</p>
+      </div>
+    );
   }
 
   if (data.length === 0) {
-    return <div className="text-muted-foreground italic">No expenses recorded for this range.</div>;
+    return (
+      <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container/40 px-4 py-8 text-center font-body text-sm text-on-surface-variant">
+        No expenses recorded for this range.
+      </p>
+    );
   }
 
   return (
@@ -71,22 +86,29 @@ export default function SpendOverTime({ granularity, selectedBucket, setSelected
             }}
             style={{ cursor: 'pointer' }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#353534" strokeOpacity={0.6} />
             <XAxis 
               dataKey="periodStart" 
               tickFormatter={formatPeriodLabel}
+              stroke="#86948a"
+              tick={{ fill: '#bbcabf', fontSize: 12, fontFamily: 'Inter, sans-serif' }}
+              tickLine={{ stroke: '#3c4a42' }}
             />
             <YAxis 
               tickFormatter={formatPaise}
+              stroke="#86948a"
+              tick={{ fill: '#bbcabf', fontSize: 12, fontFamily: 'Inter, sans-serif' }}
+              tickLine={{ stroke: '#3c4a42' }}
             />
             <Tooltip 
+              cursor={{ stroke: '#3c4a42', strokeWidth: 1, strokeDasharray: '3 3' }}
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-                      <p className="mb-1 text-sm font-medium text-foreground">{formatPeriodLabel(label)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Spent: <span className="font-semibold text-foreground">{formatPaise(payload[0].value)}</span>
+                    <div className="rounded-xl border border-outline-variant/40 bg-surface-container p-3 shadow-xl">
+                      <p className="mb-1 font-body text-xs font-medium text-on-surface-variant">{formatPeriodLabel(label)}</p>
+                      <p className="font-body text-sm text-on-surface-variant">
+                        Spent: <span className="font-semibold tabular-nums text-on-surface">{formatPaise(payload[0].value)}</span>
                       </p>
                     </div>
                   );
