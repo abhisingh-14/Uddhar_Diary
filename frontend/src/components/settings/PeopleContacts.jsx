@@ -214,14 +214,14 @@ export default function PeopleContacts() {
   return (
     <div className="mt-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <p className="max-w-[430px] text-sm leading-6 text-muted-foreground">
+        <p className="max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
           Manage names and email addresses for people you track with. An email enables reminders.
         </p>
         {!showAddForm && (
           <button
             type="button"
             onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
           >
             <UserPlus className="size-4" strokeWidth={2} />
             Add person
@@ -233,11 +233,11 @@ export default function PeopleContacts() {
         <form
           onSubmit={handleAddPerson}
           onKeyDown={(e) => { if (e.key === 'Escape') closeAddForm() }}
-          className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-sm"
+          className="mt-6 rounded-2xl bg-surface-container-low p-6 shadow-2xl"
         >
           <div className="flex flex-col gap-4">
             <div>
-              <label htmlFor="new-person-name" className="text-sm font-medium text-foreground">
+              <label htmlFor="new-person-name" className="font-body text-xs font-medium text-on-surface-variant">
                 Name
               </label>
               <input
@@ -248,15 +248,15 @@ export default function PeopleContacts() {
                 maxLength={60}
                 autoFocus
                 placeholder="Person's name"
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="mt-1 w-full rounded-lg bg-surface-container px-3.5 py-2.5 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
               />
               {addErrors.name && (
-                <p className="mt-1 text-xs text-destructive">{addErrors.name}</p>
+                <p className="mt-1 font-body text-xs text-error">{addErrors.name}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="new-person-email" className="text-sm font-medium text-foreground">
+              <label htmlFor="new-person-email" className="font-body text-xs font-medium text-on-surface-variant">
                 Email
               </label>
               <input
@@ -265,18 +265,18 @@ export default function PeopleContacts() {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="Add email"
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="mt-1 w-full rounded-lg bg-surface-container px-3.5 py-2.5 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
               />
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 font-body text-xs text-on-surface-variant">
                 Optional. Add it now or later to enable reminders.
               </p>
               {addErrors.email && (
-                <p className="mt-1 text-xs text-destructive">{addErrors.email}</p>
+                <p className="mt-1 font-body text-xs text-error">{addErrors.email}</p>
               )}
             </div>
 
             {addErrors.form && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-3 font-body text-sm text-error">
                 <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
                 <p>{addErrors.form}</p>
               </div>
@@ -286,7 +286,7 @@ export default function PeopleContacts() {
               <button
                 type="submit"
                 disabled={!newName.trim() || isAdding}
-                className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isAdding ? (
                   <>
@@ -300,7 +300,7 @@ export default function PeopleContacts() {
               <button
                 type="button"
                 onClick={closeAddForm}
-                className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                className="rounded-xl bg-surface-container px-4 py-2 font-body text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
               >
                 Cancel
               </button>
@@ -309,12 +309,12 @@ export default function PeopleContacts() {
         </form>
       )}
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="mt-6 rounded-2xl bg-surface-container-low p-6 shadow-2xl">
         {globalMessage.type && (
-          <div className={`mb-4 flex items-start gap-2.5 rounded-xl border p-3 text-sm ${
+          <div className={`mb-4 flex items-start gap-2.5 rounded-xl border p-3 font-body text-sm ${
             globalMessage.type === 'success'
-              ? 'border-green-500/50 bg-green-500/10 text-green-600'
-              : 'border-destructive/50 bg-destructive/10 text-destructive'
+              ? 'border-green-500/50 bg-green-500/10 text-green-500'
+              : 'border-error-container/50 bg-error-container/10 text-error'
           }`}>
             {globalMessage.type === 'success' ? (
               <Check className="mt-0.5 size-4 shrink-0" strokeWidth={2.5} />
@@ -326,7 +326,7 @@ export default function PeopleContacts() {
         )}
 
         {status === 'loading' && (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 py-12 font-body text-sm text-on-surface-variant">
             <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
             Loading people…
           </div>
@@ -334,14 +334,14 @@ export default function PeopleContacts() {
 
         {status === 'error' && (
           <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
               <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
               <p>{errorMessage}</p>
             </div>
             <button
               type="button"
               onClick={loadPeople}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="rounded-xl bg-primary-container px-4 py-2 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container"
             >
               Try again
             </button>
@@ -349,7 +349,7 @@ export default function PeopleContacts() {
         )}
 
         {status === 'ready' && people.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="py-12 text-center font-body text-sm text-on-surface-variant">
             No people yet. Add someone with the button above, or they'll appear here when you split a bill.
           </div>
         )}
@@ -359,7 +359,7 @@ export default function PeopleContacts() {
             {peopleWithBalances.map(person => (
               <div
                 key={person.id}
-                className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4"
+                className="flex items-center gap-4 rounded-xl bg-surface-container p-4"
               >
                 <div className="flex-1">
                   {editingNameId === person.id ? (
@@ -387,21 +387,21 @@ export default function PeopleContacts() {
                         maxLength={60}
                         autoFocus
                         aria-label={`Name for ${person.name}`}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className="w-full rounded-lg bg-surface-container-lowest px-3 py-1.5 font-body text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary"
                         disabled={isSavingName}
                       />
                       {nameError.personId === person.id && nameError.message && (
-                        <p className="mt-1 text-xs text-destructive">{nameError.message}</p>
+                        <p className="mt-1 font-body text-xs text-error">{nameError.message}</p>
                       )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground">{person.name}</p>
+                      <p className="font-body font-medium text-on-surface">{person.name}</p>
                       <button
                         type="button"
                         onClick={() => startNameEdit(person)}
                         aria-label={`Edit name for ${person.name}`}
-                        className="text-muted-foreground transition-colors hover:text-foreground"
+                        className="text-on-surface-variant transition-colors hover:text-on-surface"
                       >
                         <Pencil className="size-3.5" strokeWidth={1.8} />
                       </button>
@@ -414,7 +414,7 @@ export default function PeopleContacts() {
                     defaultValue={person.email || ''}
                     onBlur={(e) => handleEmailBlur(person.id, e.target.value)}
                     placeholder="Add email"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-lg bg-surface-container-lowest px-3 py-1.5 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary"
                     disabled={saveStatus[person.id] === 'saving'}
                   />
                 </div>
@@ -425,7 +425,7 @@ export default function PeopleContacts() {
                       onClick={() => handleRemind(person.id)}
                       disabled={remindStatus[person.id] === 'sending'}
                       aria-label="Remind"
-                      className="group flex h-8 items-center justify-center rounded-lg bg-primary px-2 text-xs font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="group flex h-8 items-center justify-center rounded-lg bg-primary-container px-2.5 font-body text-xs font-semibold text-on-primary-container transition-all hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {remindStatus[person.id] === 'sending' ? (
                         <Loader2 className="size-3.5 shrink-0 animate-spin" strokeWidth={1.8} />
@@ -438,13 +438,13 @@ export default function PeopleContacts() {
                     </button>
                   )}
                   {saveStatus[person.id] === 'saving' && (
-                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" strokeWidth={1.8} />
+                    <Loader2 className="size-4 shrink-0 animate-spin text-on-surface-variant" strokeWidth={1.8} />
                   )}
                   {saveStatus[person.id] === 'success' && (
                     <Check className="size-4 shrink-0 text-green-500" strokeWidth={2.5} />
                   )}
                   {saveStatus[person.id] === 'error' && (
-                    <span className="shrink-0 text-xs text-destructive">Failed</span>
+                    <span className="shrink-0 font-body text-xs text-error">Failed</span>
                   )}
                 </div>
               </div>

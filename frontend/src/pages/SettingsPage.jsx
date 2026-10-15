@@ -11,10 +11,10 @@ export default function SettingsPage() {
     <div className="flex flex-1 items-start justify-center px-5 py-6 md:px-12 md:py-10 lg:py-16">
       <div className="w-full max-w-[760px] animate-in fade-in duration-500">
         <div className="max-w-[500px]">
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.045em] md:text-[40px] md:leading-[1.05]">
+          <h2 className="font-headline text-balance text-3xl font-semibold tracking-[-0.045em] text-on-surface md:text-[40px] md:leading-[1.05]">
             Settings
           </h2>
-          <p className="mt-4 max-w-[430px] text-sm leading-6 text-muted-foreground">
+          <p className="mt-4 max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
             Manage your profile, security, and the people you track.
           </p>
         </div>
@@ -25,10 +25,10 @@ export default function SettingsPage() {
               key={path}
               to={path}
               className={({ isActive }) =>
-                `flex min-w-fit items-center rounded-xl px-3 py-2.5 text-[13px] transition-colors ${
+                `flex min-w-fit items-center rounded-xl px-4 py-2 font-body text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted/70'
+                    ? 'bg-primary-container text-on-primary-container shadow-md'
+                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                 }`
               }
             >

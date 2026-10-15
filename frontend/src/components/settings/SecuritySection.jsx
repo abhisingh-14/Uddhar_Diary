@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { AlertCircle, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { changePassword } from '../../api/client.js'
 
-const CARD_CLASS = 'rounded-2xl border border-border bg-card p-6 shadow-sm'
-const INPUT_CLASS = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50'
+const CARD_CLASS = 'rounded-2xl bg-surface-container-low p-6 shadow-2xl'
+const INPUT_CLASS = 'w-full rounded-lg bg-surface-container px-3.5 py-2.5 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary'
 
 const MIN_LENGTH = 8
 const MAX_LENGTH = 72
@@ -26,7 +26,7 @@ function PasswordField({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-foreground">
+      <label htmlFor={id} className="mb-1.5 block font-body text-xs font-medium text-on-surface-variant">
         {label}
       </label>
 
@@ -47,7 +47,7 @@ function PasswordField({
           onClick={onToggleShow}
           aria-label={`${show ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
           aria-pressed={show}
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:text-foreground"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-on-surface-variant transition-colors hover:text-on-surface"
         >
           {show ? (
             <EyeOff className="size-4" strokeWidth={1.8} />
@@ -60,7 +60,7 @@ function PasswordField({
       {message && (
         <p
           id={messageId}
-          className={`mt-2 text-sm leading-6 ${error ? 'text-destructive' : 'text-muted-foreground'}`}
+          className={`mt-2 font-body text-xs leading-5 ${error ? 'text-error' : 'text-on-surface-variant'}`}
         >
           {message}
         </p>
@@ -165,8 +165,8 @@ export default function SecuritySection() {
 
   return (
     <div className={`mt-10 ${CARD_CLASS}`}>
-      <h2 className="text-base font-semibold text-foreground">Change password</h2>
-      <p className="mt-1.5 text-sm leading-6 text-muted-foreground">Use at least 8 characters.</p>
+      <h2 className="font-headline text-base font-semibold text-on-surface">Change password</h2>
+      <p className="mt-1.5 font-body text-sm leading-6 text-on-surface-variant">Use at least 8 characters.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <PasswordField
@@ -207,7 +207,7 @@ export default function SecuritySection() {
         />
 
         {formError && (
-          <div className="flex items-start gap-2.5 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error">
             <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
             <p>{formError}</p>
           </div>
@@ -217,7 +217,7 @@ export default function SecuritySection() {
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-primary-container px-5 py-2.5 font-body text-sm font-semibold text-on-primary-container transition-transform hover:-translate-y-0.5 hover:bg-secondary-container disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isSubmitting ? (
               <>
@@ -230,7 +230,7 @@ export default function SecuritySection() {
           </button>
 
           {submitStatus === 'success' && (
-            <span className="flex items-center gap-1.5 text-sm text-green-500">
+            <span className="flex items-center gap-1.5 font-body text-sm font-medium text-green-500">
               <Check className="size-4" strokeWidth={2.5} />
               Password updated
             </span>
