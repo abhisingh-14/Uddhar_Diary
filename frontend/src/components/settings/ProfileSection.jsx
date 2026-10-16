@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertCircle, Check, Loader2 } from 'lucide-react'
+import { AlertCircle, Check, Loader2, LogOut } from 'lucide-react'
 import { getProfile, updateProfile } from '../../api/client.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const CARD_CLASS = 'rounded-2xl bg-surface-container-low p-6 shadow-2xl'
 const INPUT_CLASS = 'w-full rounded-lg bg-surface-container px-3.5 py-2.5 font-body text-sm text-on-surface outline-none placeholder:text-outline focus:ring-1 focus:ring-primary'
 
 export default function ProfileSection() {
+  const { signOut } = useAuth()
   const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
   const [savedName, setSavedName] = useState('') // last value confirmed by the server ('' when null)
@@ -13,6 +15,8 @@ export default function ProfileSection() {
   const [fullName, setFullName] = useState('')
   const [saveStatus, setSaveStatus] = useState('idle') // 'idle' | 'saving' | 'success' | 'error'
   const [saveError, setSaveError] = useState('')
+  const [signOutStatus, setSignOutStatus] = useState('idle') // 'idle' | 'signingOut' | 'error'
+  const [signOutError, setSignOutError] = useState('')
   const savedTimerRef = useRef(null)
 
   const loadProfile = useCallback(async () => {
@@ -69,6 +73,22 @@ export default function ProfileSection() {
     }
   }
 
+  const handleSignOut = async () => {
+    if (signOutStatus === 'signingOut') return
+
+    setSignOutStatus('signingOut')
+    setSignOutError('')
+
+    try {
+      await signOut()
+      // No navigate() here on purpose: AuthContext clears the session and
+      // ProtectedRoute redirects to /login as soon as session becomes null.
+    } catch (err) {
+      setSignOutError(err.message || 'Failed to log out. Please try again.')
+      setSignOutStatus('error')
+    }
+  }
+
   if (status === 'loading') {
     return (
       <div className={`mt-10 ${CARD_CLASS}`} aria-busy="true">
@@ -84,6 +104,7 @@ export default function ProfileSection() {
           <div className="h-9 w-full animate-pulse rounded-lg bg-surface-container" />
           <div className="h-10 w-24 animate-pulse rounded-xl bg-surface-container" />
         </div>
+        <SignOutBlock status={signOutStatus} error={signOutError} onSignOut={handleSignOut} />
         <span className="sr-only">Loading profile…</span>
       </div>
     )
@@ -104,6 +125,8 @@ export default function ProfileSection() {
           >
             Retry
           </button>
+
+          <SignOutBlock status={signOutStatus} error={signOutError} onSignOut={handleSignOut} />
         </div>
       </div>
     )
@@ -185,6 +208,45 @@ export default function ProfileSection() {
           )}
         </div>
       </form>
+
+      <SignOutBlock status={signOutStatus} error={signOutError} onSignOut={handleSignOut} />
+    </div>
+  )
+}
+
+// Shared by every Profile card state (loading skeleton, load error, ready) so
+// the user can always sign out, even when the profile fetch failed.
+function SignOutBlock({ status, error, onSignOut }) {
+  return (
+    <div className="mt-6 border-t border-outline-variant pt-5">
+      {error && (
+        <div
+          role="alert"
+          className="mb-3 flex items-start gap-2.5 rounded-xl border border-error-container/50 bg-error-container/10 p-4 font-body text-sm text-error"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
+          <p>{error}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onSignOut}
+        disabled={status === 'signingOut'}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-error-container/50 bg-error-container/10 px-5 py-2.5 font-body text-sm font-semibold text-error transition-colors hover:bg-error-container/20 disabled:cursor-not-allowed disabled:opacity-40 md:w-fit"
+      >
+        {status === 'signingOut' ? (
+          <>
+            <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
+            Logging out…
+          </>
+        ) : (
+          <>
+            <LogOut className="size-4" strokeWidth={1.8} />
+            Log out
+          </>
+        )}
+      </button>
     </div>
   )
 }

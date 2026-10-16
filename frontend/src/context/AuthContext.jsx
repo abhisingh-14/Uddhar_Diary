@@ -29,7 +29,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // supabase-js v2 reports sign-out failures in `error` instead of throwing;
+    // rethrow so callers (e.g. the Settings "Log out" button) can surface them.
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      // Fallback: a local-only sign-out still clears this device's session
+      // when the server-side revocation fails (e.g. network hiccups).
+      const { error: localError } = await supabase.auth.signOut({ scope: 'local' });
+      if (localError) throw localError;
+    }
   };
 
   return (
