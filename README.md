@@ -58,6 +58,7 @@ Create a `.env` file in the `backend` directory with the following variables:
 PORT=3001
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_ANON_KEY=your_supabase_anon_key
 GEMINI_API_KEY=your_gemini_api_key
 RESEND_API_KEY=your_resend_api_key
 RESEND_FROM_EMAIL=onboarding@resend.dev
@@ -97,8 +98,8 @@ The app will be accessible at the local address provided by Vite (usually `http:
 ## Project Structure
 
 - `frontend/`: Contains the React application, pages, and UI components.
-- `backend/`: Contains the Express server, API routes, AI extraction service, and email integrations.
-- `backend/sql/`: (If applicable) SQL scripts for setting up the Supabase database schema.
+- `backend/`: Contains the Express server, API routes, AI extraction service, and email integrations. See [backend/README.md](backend/README.md) for full backend and API documentation.
+- `backend/sql/`: SQL schema, views, and migrations for setting up the Supabase database.
 
 ## License
 
