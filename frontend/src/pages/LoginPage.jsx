@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
 import AuthBrandPanel from '../components/AuthBrandPanel'
 import MobileAuthHeader from '../components/MobileAuthHeader'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const accountDeleted = Boolean(location.state?.accountDeleted)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -62,6 +64,17 @@ export default function LoginPage() {
               Log in to your account
             </h2>
           </div>
+
+          {/* Account deleted notice */}
+          {accountDeleted && (
+            <div
+              className="mb-6 flex items-start gap-2.5 rounded-xl border border-primary/40 bg-primary/10 p-3.5 text-sm text-primary"
+              aria-live="polite"
+            >
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+              <p>Your account has been deleted.</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

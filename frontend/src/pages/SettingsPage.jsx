@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 const tabs = [
   { label: 'Profile', path: '/settings/profile' },
-  { label: 'Security', path: '/settings/security' },
+  { label: 'Account', path: '/settings/account' },
   { label: 'People & contacts', path: '/settings/people' },
 ]
 
@@ -15,7 +15,7 @@ export default function SettingsPage() {
             Settings
           </h2>
           <p className="mt-4 max-w-[430px] font-body text-sm leading-6 text-on-surface-variant">
-            Manage your profile, security, and the people you track.
+            Manage your profile, account, and the people you track.
           </p>
         </div>
 

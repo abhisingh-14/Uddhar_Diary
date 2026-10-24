@@ -23,7 +23,152 @@ const passwordChangeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.use(passwordChangeLimiter);
+/**
+ * Helper to paginate and delete all storage files under bill-images/${userId}/
+ */
+async function deleteUserStorageFiles(userId) {
+  const BUCKET = 'bill-images';
+  while (true) {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .list(userId, { limit: 100 });
+
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      // An empty/missing folder is not an error
+      if (msg.includes('not found') || error.status === 404 || error.statusCode === 404) {
+        break;
+      }
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    const filePaths = data.map((item) => `${userId}/${item.name}`);
+    const { error: removeError } = await supabase.storage
+      .from(BUCKET)
+      .remove(filePaths);
+
+    if (removeError) {
+      throw removeError;
+    }
+  }
+}
+
+/**
+ * DELETE /api/account
+ * 
+ * Permanently deletes the authenticated user's account and all associated data.
+ * 
+ * Order of operations:
+ * (a) Paginate & delete all files under ${userId}/ in 'bill-images' bucket
+ * (b) Delete debts (by person_id and bill_id), then bills, then people
+ * (c) Delete auth user last via admin.deleteUser (cascades to profiles)
+ */
+router.delete('/', async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    // (a) Delete storage files first
+    try {
+      await deleteUserStorageFiles(userId);
+    } catch (storageError) {
+      console.error('Failed to delete user storage files during account deletion:', storageError);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    }
+
+    // (b) Delete debts (by person_id and bill_id), then bills, then people
+    const { data: people, error: peopleFetchError } = await supabase
+      .from('people')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (peopleFetchError) {
+      console.error('Failed to fetch user people during account deletion:', peopleFetchError);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    }
+
+    const personIds = (people || []).map((p) => p.id);
+
+    const { data: bills, error: billsFetchError } = await supabase
+      .from('bills')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (billsFetchError) {
+      console.error('Failed to fetch user bills during account deletion:', billsFetchError);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    }
+
+    const billIds = (bills || []).map((b) => b.id);
+
+    // Delete debts referencing user's people
+    if (personIds.length > 0) {
+      const { error: debtsByPersonError } = await supabase
+        .from('debts')
+        .delete()
+        .in('person_id', personIds);
+
+      if (debtsByPersonError) {
+        console.error('Failed to delete debts by person_id during account deletion:', debtsByPersonError);
+        return res.status(500).json({ error: 'Failed to delete account' });
+      }
+    }
+
+    // Delete debts referencing user's bills
+    if (billIds.length > 0) {
+      const { error: debtsByBillError } = await supabase
+        .from('debts')
+        .delete()
+        .in('bill_id', billIds);
+
+      if (debtsByBillError) {
+        console.error('Failed to delete debts by bill_id during account deletion:', debtsByBillError);
+        return res.status(500).json({ error: 'Failed to delete account' });
+      }
+    }
+
+    // Delete bills (cascades to bill_items)
+    if (billIds.length > 0) {
+      const { error: billsDeleteError } = await supabase
+        .from('bills')
+        .delete()
+        .eq('user_id', userId);
+
+      if (billsDeleteError) {
+        console.error('Failed to delete bills during account deletion:', billsDeleteError);
+        return res.status(500).json({ error: 'Failed to delete account' });
+      }
+    }
+
+    // Delete people
+    if (personIds.length > 0) {
+      const { error: peopleDeleteError } = await supabase
+        .from('people')
+        .delete()
+        .eq('user_id', userId);
+
+      if (peopleDeleteError) {
+        console.error('Failed to delete people during account deletion:', peopleDeleteError);
+        return res.status(500).json({ error: 'Failed to delete account' });
+      }
+    }
+
+    // (c) Delete auth user LAST via admin.deleteUser (cascades to profiles)
+    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId);
+    if (deleteUserError) {
+      console.error('Failed to delete auth user from Supabase:', deleteUserError);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Unexpected error during account deletion:', err);
+    return res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
 
 /**
  * POST /api/account/change-password
@@ -42,7 +187,7 @@ router.use(passwordChangeLimiter);
  *   via requireAuth - this is a validation error, not an authentication failure
  * - Rate limiter comes after requireAuth so we can key by req.userId
  */
-router.post('/change-password', async (req, res) => {
+router.post('/change-password', passwordChangeLimiter, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 

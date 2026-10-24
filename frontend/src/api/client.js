@@ -117,6 +117,12 @@ export async function changePassword({ currentPassword, newPassword }) {
   });
 }
 
+export async function deleteAccount() {
+  return apiClient('/api/account', {
+    method: 'DELETE',
+  });
+}
+
 export async function addManualDebt({ personId, direction, amountPaise, kind, incurredOn, note }) {
   return apiClient('/api/debts/manual', {
     method: 'POST',
