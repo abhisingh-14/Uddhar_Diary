@@ -28,33 +28,40 @@ const passwordChangeLimiter = rateLimit({
  */
 async function deleteUserStorageFiles(userId) {
   const BUCKET = 'bill-images';
-  while (true) {
+  const MAX_ITERATIONS = 1000;
+
+  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const { data, error } = await supabase.storage
       .from(BUCKET)
       .list(userId, { limit: 100 });
 
     if (error) {
-      const msg = (error.message || '').toLowerCase();
-      // An empty/missing folder is not an error
-      if (msg.includes('not found') || error.status === 404 || error.statusCode === 404) {
-        break;
+      // A missing folder is treated as an empty list (404 status check)
+      if (error.status === 404 || error.statusCode === 404) {
+        return;
       }
       throw error;
     }
 
     if (!data || data.length === 0) {
-      break;
+      return;
     }
 
     const filePaths = data.map((item) => `${userId}/${item.name}`);
-    const { error: removeError } = await supabase.storage
+    const { data: removeData, error: removeError } = await supabase.storage
       .from(BUCKET)
       .remove(filePaths);
 
     if (removeError) {
       throw removeError;
     }
+
+    if (!removeData || removeData.length === 0) {
+      throw new Error('Failed to delete storage files: zero files removed');
+    }
   }
+
+  throw new Error('Exceeded maximum iterations while deleting user storage files');
 }
 
 /**
@@ -64,7 +71,7 @@ async function deleteUserStorageFiles(userId) {
  * 
  * Order of operations:
  * (a) Paginate & delete all files under ${userId}/ in 'bill-images' bucket
- * (b) Delete debts (by person_id and bill_id), then bills, then people
+ * (b) Delete debts (by person_id only), then bills, then people
  * (c) Delete auth user last via admin.deleteUser (cascades to profiles)
  */
 router.delete('/', async (req, res) => {
@@ -79,7 +86,7 @@ router.delete('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to delete account' });
     }
 
-    // (b) Delete debts (by person_id and bill_id), then bills, then people
+    // (b) Delete debts (by person_id only), then bills, then people
     const { data: people, error: peopleFetchError } = await supabase
       .from('people')
       .select('id')
@@ -91,18 +98,6 @@ router.delete('/', async (req, res) => {
     }
 
     const personIds = (people || []).map((p) => p.id);
-
-    const { data: bills, error: billsFetchError } = await supabase
-      .from('bills')
-      .select('id')
-      .eq('user_id', userId);
-
-    if (billsFetchError) {
-      console.error('Failed to fetch user bills during account deletion:', billsFetchError);
-      return res.status(500).json({ error: 'Failed to delete account' });
-    }
-
-    const billIds = (bills || []).map((b) => b.id);
 
     // Delete debts referencing user's people
     if (personIds.length > 0) {
@@ -117,30 +112,15 @@ router.delete('/', async (req, res) => {
       }
     }
 
-    // Delete debts referencing user's bills
-    if (billIds.length > 0) {
-      const { error: debtsByBillError } = await supabase
-        .from('debts')
-        .delete()
-        .in('bill_id', billIds);
-
-      if (debtsByBillError) {
-        console.error('Failed to delete debts by bill_id during account deletion:', debtsByBillError);
-        return res.status(500).json({ error: 'Failed to delete account' });
-      }
-    }
-
     // Delete bills (cascades to bill_items)
-    if (billIds.length > 0) {
-      const { error: billsDeleteError } = await supabase
-        .from('bills')
-        .delete()
-        .eq('user_id', userId);
+    const { error: billsDeleteError } = await supabase
+      .from('bills')
+      .delete()
+      .eq('user_id', userId);
 
-      if (billsDeleteError) {
-        console.error('Failed to delete bills during account deletion:', billsDeleteError);
-        return res.status(500).json({ error: 'Failed to delete account' });
-      }
+    if (billsDeleteError) {
+      console.error('Failed to delete bills during account deletion:', billsDeleteError);
+      return res.status(500).json({ error: 'Failed to delete account' });
     }
 
     // Delete people

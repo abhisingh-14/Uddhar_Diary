@@ -184,7 +184,7 @@ export default function AccountSection() {
       await signOut()
       navigate('/login')
     } catch (err) {
-      setSignOutError(err.message || 'Failed to sign out. Please try again.')
+      setSignOutError(err.message || 'Failed to log out. Please try again.')
       setIsSigningOut(false)
     }
   }
@@ -267,11 +267,11 @@ export default function AccountSection() {
         </form>
       </div>
 
-      {/* 2. Sign out card */}
+      {/* 2. Log out card */}
       <div className={CARD_CLASS}>
-        <h2 className="font-headline text-base font-semibold text-on-surface">Sign out</h2>
+        <h2 className="font-headline text-base font-semibold text-on-surface">Log out</h2>
         <p className="mt-1.5 font-body text-sm leading-6 text-on-surface-variant">
-          Sign out of this device
+          Log out of this device
         </p>
 
         {signOutError && (
@@ -291,12 +291,12 @@ export default function AccountSection() {
             {isSigningOut ? (
               <>
                 <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
-                Signing out…
+                Logging out…
               </>
             ) : (
               <>
                 <LogOut className="size-4" strokeWidth={1.8} />
-                Sign out
+                Log out
               </>
             )}
           </button>
